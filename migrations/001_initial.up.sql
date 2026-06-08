@@ -7,7 +7,7 @@ CREATE TABLE users (
   role          TEXT NOT NULL CHECK (role IN ('admin', 'editor', 'viewer')),
   password_hash TEXT NOT NULL,
   active        BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE folders (
@@ -15,7 +15,7 @@ CREATE TABLE folders (
   parent_id  UUID REFERENCES folders(id) ON DELETE CASCADE,
   name       TEXT NOT NULL,
   owner_id   UUID NOT NULL REFERENCES users(id),
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE files (
@@ -27,7 +27,7 @@ CREATE TABLE files (
   mime_type   TEXT,
   uploaded_by UUID NOT NULL REFERENCES users(id),
   status      TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'active', 'deleted')),
-  created_at  TIMESTAMPTZ DEFAULT NOW()
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE permissions (
@@ -37,7 +37,7 @@ CREATE TABLE permissions (
   resource_id   UUID NOT NULL,
   level         TEXT NOT NULL CHECK (level IN ('view', 'edit', 'manage')),
   granted_by    UUID REFERENCES users(id),
-  created_at    TIMESTAMPTZ DEFAULT NOW(),
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE (user_id, resource_type, resource_id)
 );
 
@@ -48,10 +48,10 @@ CREATE TABLE shares (
   share_type    TEXT NOT NULL CHECK (share_type IN ('public', 'private')),
   password_hash TEXT,
   expires_at    TIMESTAMPTZ,
-  max_views     INT,
-  view_count    INT NOT NULL DEFAULT 0,
+  max_views     INT CHECK (max_views IS NULL OR max_views > 0),
+  view_count    INT NOT NULL DEFAULT 0 CHECK (view_count >= 0),
   created_by    UUID NOT NULL REFERENCES users(id),
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE audit_log (
@@ -61,5 +61,22 @@ CREATE TABLE audit_log (
   resource_type TEXT,
   resource_id   UUID,
   meta          JSONB,
-  created_at    TIMESTAMPTZ DEFAULT NOW()
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- Indexes for common query patterns
+CREATE INDEX idx_folders_parent_id ON folders(parent_id);
+CREATE INDEX idx_folders_owner_id  ON folders(owner_id);
+
+CREATE INDEX idx_files_folder_id   ON files(folder_id);
+CREATE INDEX idx_files_status      ON files(status);
+CREATE INDEX idx_files_uploaded_by ON files(uploaded_by);
+
+CREATE INDEX idx_permissions_resource ON permissions(resource_type, resource_id);
+CREATE INDEX idx_permissions_user_id  ON permissions(user_id);
+
+CREATE INDEX idx_audit_log_user_id    ON audit_log(user_id);
+CREATE INDEX idx_audit_log_created_at ON audit_log(created_at DESC);
+
+CREATE INDEX idx_shares_expires_at ON shares(expires_at)
+  WHERE expires_at IS NOT NULL;
