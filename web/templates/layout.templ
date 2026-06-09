@@ -1,0 +1,42 @@
+package templates
+
+import "github.com/brifafrica/vaulx/internal/viewmodel"
+
+templ Layout(title string, user viewmodel.UserView) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — Vaulx</title>
+			<link rel="stylesheet" href="/static/app.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+		</head>
+		<body>
+			<div
+				class="app"
+				x-data="{ toasts: [] }"
+				x-on:showtoast.window="toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)"
+			>
+				@Sidebar(user)
+				<main class="main-content">
+					{ children... }
+				</main>
+				<div class="toast-container">
+					<template x-for="(t, i) in toasts" :key="i">
+						<div class="toast" :class="'toast-' + (t.type || 'info')">
+							<span x-text="t.message"></span>
+						</div>
+					</template>
+				</div>
+			</div>
+			<script>
+				// Forward HTMX HX-Trigger showToast events into Alpine
+				document.body.addEventListener("showToast", function(e) {
+					window.dispatchEvent(new CustomEvent("showtoast", { detail: e.detail }));
+				});
+			</script>
+		</body>
+	</html>
+}

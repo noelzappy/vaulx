@@ -1,0 +1,90 @@
+package templates
+
+import "github.com/brifafrica/vaulx/internal/viewmodel"
+
+templ FilesPage(data viewmodel.FileBrowserData, user viewmodel.UserView) {
+	@Layout("My Files", user) {
+		@FileBrowserContent(data, user)
+	}
+}
+
+templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView) {
+	<div id="browser-content">
+		<div class="toolbar">
+			<div>
+				@Breadcrumb(data.Breadcrumbs)
+			</div>
+			if user.Role == "admin" || user.Role == "editor" {
+				<button
+					class="btn btn-primary"
+					onclick="document.getElementById('new-folder-form').style.display='flex'"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+					</svg>
+					New Folder
+				</button>
+			}
+		</div>
+		<form
+			id="new-folder-form"
+			style="display:none;gap:8px;margin-bottom:20px;align-items:center"
+			hx-post="/files/folders"
+			hx-target="#browser-content"
+			hx-swap="outerHTML"
+		>
+			if data.FolderID != "" {
+				<input type="hidden" name="parent_id" value={ data.FolderID }/>
+			}
+			<input class="input" style="max-width:280px" name="name" placeholder="Folder name" required autofocus/>
+			<button class="btn btn-primary" type="submit">Create</button>
+			<button class="btn btn-ghost" type="button" onclick="document.getElementById('new-folder-form').style.display='none'">Cancel</button>
+		</form>
+		if len(data.Folders) == 0 && len(data.Files) == 0 {
+			<div class="file-grid">
+				<div class="empty-state">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"></path>
+					</svg>
+					<p>No files or folders yet</p>
+				</div>
+			</div>
+		} else {
+			if len(data.Folders) > 0 {
+				<p class="section-heading">Folders</p>
+				<div class="file-grid">
+					for _, folder := range data.Folders {
+						@FolderCard(folder)
+					}
+				</div>
+			}
+			if len(data.Files) > 0 {
+				<p class="section-heading">Files</p>
+				<div class="file-grid">
+					for _, file := range data.Files {
+						@FileCard(file)
+					}
+				</div>
+			}
+		}
+	</div>
+}
+
+templ Breadcrumb(crumbs []viewmodel.BreadcrumbItem) {
+	<nav class="breadcrumb">
+		for i, crumb := range crumbs {
+			if i == len(crumbs)-1 {
+				<span class="breadcrumb-current">{ crumb.Name }</span>
+			} else {
+				<a
+					href={ templ.SafeURL(crumb.URL) }
+					hx-get={ crumb.URL }
+					hx-target="#browser-content"
+					hx-swap="outerHTML"
+					hx-push-url={ crumb.URL }
+				>{ crumb.Name }</a>
+				<span class="breadcrumb-sep">/</span>
+			}
+		}
+	</nav>
+}

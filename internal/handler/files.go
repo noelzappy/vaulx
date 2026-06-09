@@ -7,6 +7,7 @@ import (
 	"github.com/brifafrica/vaulx/internal/auth"
 	"github.com/brifafrica/vaulx/internal/db"
 	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/brifafrica/vaulx/web/templates"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -269,9 +270,11 @@ func (h *FilesHandler) buildBreadcrumbs(ctx context.Context, leaf db.Folder) []v
 	return append([]viewmodel.BreadcrumbItem{{Name: "My Files", URL: "/files"}}, crumbs...)
 }
 
-// renderFileBrowser is replaced in Task 14 once templ components are generated.
 func renderFileBrowser(w http.ResponseWriter, r *http.Request, data viewmodel.FileBrowserData, user viewmodel.UserView) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	// TODO Task 14: if htmx { templates.FileBrowserContent(data,user).Render(...) } else { templates.FilesPage(data,user).Render(...) }
-	_, _ = w.Write([]byte("file browser – templates not yet generated"))
+	if r.Header.Get("HX-Request") == "true" {
+		_ = templates.FileBrowserContent(data, user).Render(r.Context(), w)
+		return
+	}
+	_ = templates.FilesPage(data, user).Render(r.Context(), w)
 }

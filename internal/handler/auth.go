@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/brifafrica/vaulx/web/templates"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -64,12 +65,10 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/auth/login", http.StatusFound)
 }
 
-// renderLogin is replaced in Task 14 once templ components are generated.
 func renderLogin(w http.ResponseWriter, r *http.Request, errMsg string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	if errMsg != "" {
 		w.WriteHeader(http.StatusUnauthorized)
 	}
-	// TODO Task 14: templates.LoginPage(errMsg).Render(r.Context(), w)
-	_, _ = w.Write([]byte("login page – templates not yet generated"))
+	_ = templates.LoginPage(errMsg).Render(r.Context(), w)
 }
