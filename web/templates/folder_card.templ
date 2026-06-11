@@ -8,7 +8,8 @@ import (
 templ FolderCard(folder viewmodel.FolderView) {
 	<div
 		class="card"
-		x-data={ "{ editing: false, draftName: '" + folder.Name + "' }" }
+		data-folder-name={ folder.Name }
+		x-data="{ editing: false, draftName: $el.dataset.folderName }"
 		title={ folder.Name }
 	>
 		<div class="card-actions" x-show="!editing" onclick="event.stopPropagation()">
@@ -55,14 +56,13 @@ templ FolderCard(folder viewmodel.FolderView) {
 				hx-target="closest .card"
 				hx-swap="outerHTML"
 				style="display:flex;gap:6px;align-items:center;"
-				x-on:submit="editing = false"
 			>
 				<input
 					class="input folder-rename-input"
 					name="name"
 					x-ref="renameInput"
 					x-model="draftName"
-					x-on:keydown.escape.prevent={ "editing = false; draftName = '" + folder.Name + "'" }
+					x-on:keydown.escape.prevent="editing = false; draftName = $el.closest('.card').dataset.folderName"
 					placeholder="Folder name"
 					required
 					onclick="event.stopPropagation()"
@@ -72,7 +72,7 @@ templ FolderCard(folder viewmodel.FolderView) {
 					class="btn btn-ghost"
 					type="button"
 					style="padding:5px 10px;font-size:12px;"
-					x-on:click.stop={ "editing = false; draftName = '" + folder.Name + "'" }
+					x-on:click.stop="editing = false; draftName = $el.closest('.card').dataset.folderName"
 				>Cancel</button>
 			</form>
 		</div>
