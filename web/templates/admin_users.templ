@@ -1,0 +1,138 @@
+package templates
+
+import "github.com/brifafrica/vaulx/internal/viewmodel"
+
+templ AdminUsersPage(users []viewmodel.UserView, currentUser viewmodel.UserView) {
+	@Layout("Users", currentUser) {
+		@AdminUsersContent(users)
+	}
+}
+
+templ AdminUsersContent(users []viewmodel.UserView) {
+	<div id="admin-users-content">
+		<div class="toolbar" style="margin-bottom:24px;">
+			<h1 style="font-size:18px;font-weight:600;">Users</h1>
+			<button
+				class="btn btn-primary"
+				onclick="document.getElementById('create-user-form').style.display='block'"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+				</svg>
+				New User
+			</button>
+		</div>
+		<div id="create-user-form" style="display:none;margin-bottom:24px;">
+			<div class="card" style="max-width:480px;">
+				<p style="font-size:13px;font-weight:600;margin-bottom:16px;">Create User</p>
+				<form method="POST" action="/admin/users">
+					<div class="form-group">
+						<label class="form-label" for="email">Email</label>
+						<input class="input" type="email" id="email" name="email" placeholder="user@brif.africa" required/>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="name">Full Name</label>
+						<input class="input" type="text" id="name" name="name" placeholder="First Last" required/>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="role">Role</label>
+						<select class="input" id="role" name="role" required>
+							<option value="viewer">Viewer</option>
+							<option value="editor">Editor</option>
+							<option value="admin">Admin</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label class="form-label" for="password">Temporary Password</label>
+						<input class="input" type="text" id="password" name="password" placeholder="They should change this on first login" required/>
+					</div>
+					<div style="display:flex;gap:8px;margin-top:4px;">
+						<button class="btn btn-primary" type="submit">Create</button>
+						<button class="btn btn-ghost" type="button" onclick="document.getElementById('create-user-form').style.display='none'">Cancel</button>
+					</div>
+				</form>
+			</div>
+		</div>
+		<div class="card" style="padding:0;overflow:hidden;">
+			<table class="data-table">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Email</th>
+						<th>Role</th>
+						<th>Status</th>
+						<th>Actions</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, u := range users {
+						@userRow(u)
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+}
+
+templ userRow(u viewmodel.UserView) {
+	<tr>
+		<td style="color:var(--text);font-weight:500;">{ u.Name }</td>
+		<td>{ u.Email }</td>
+		<td>
+			<span class={ "badge " + roleBadgeClass(u.Role) }>{ u.Role }</span>
+		</td>
+		<td>
+			if u.Active == "true" {
+				<span class="badge" style="background:rgba(63,185,80,0.1);color:var(--success);">Active</span>
+			} else {
+				<span class="badge badge-inactive">Inactive</span>
+			}
+		</td>
+		<td>
+			<div style="display:flex;gap:6px;">
+				<select
+					class="input"
+					style="width:auto;padding:4px 8px;font-size:12px;"
+					hx-patch={ "/admin/users/" + u.ID }
+					hx-trigger="change"
+					hx-vals={ `{"active":"` + u.Active + `"}` }
+					hx-target="closest tr"
+					hx-swap="outerHTML"
+				>
+					<option value="admin" selected?={ u.Role == "admin" }>admin</option>
+					<option value="editor" selected?={ u.Role == "editor" }>editor</option>
+					<option value="viewer" selected?={ u.Role == "viewer" }>viewer</option>
+				</select>
+				if u.Active == "true" {
+					<button
+						class="card-btn card-btn-danger"
+						hx-patch={ "/admin/users/" + u.ID }
+						hx-vals={ `{"active":"false"}` }
+						hx-confirm={ "Deactivate " + u.Name + "?" }
+						hx-target="closest tr"
+						hx-swap="outerHTML"
+					>Deactivate</button>
+				} else {
+					<button
+						class="card-btn"
+						hx-patch={ "/admin/users/" + u.ID }
+						hx-vals={ `{"active":"true"}` }
+						hx-target="closest tr"
+						hx-swap="outerHTML"
+					>Activate</button>
+				}
+			</div>
+		</td>
+	</tr>
+}
+
+func roleBadgeClass(role string) string {
+	switch role {
+	case "admin":
+		return "badge-admin"
+	case "editor":
+		return "badge-editor"
+	default:
+		return "badge-viewer"
+	}
+}

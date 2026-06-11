@@ -9,10 +9,11 @@ import (
 )
 
 type UserView struct {
-	ID    string
-	Email string
-	Name  string
-	Role  string
+	ID     string
+	Email  string
+	Name   string
+	Role   string
+	Active string // "true" or "false" — string for templ comparisons
 }
 
 type FileView struct {
@@ -98,11 +99,16 @@ func RelativeTime(t time.Time) string {
 }
 
 func UserFromDB(u db.User) UserView {
+	active := "false"
+	if u.Active {
+		active = "true"
+	}
 	return UserView{
-		ID:    u.ID.String(),
-		Email: u.Email,
-		Name:  u.Name,
-		Role:  u.Role,
+		ID:     u.ID.String(),
+		Email:  u.Email,
+		Name:   u.Name,
+		Role:   u.Role,
+		Active: active,
 	}
 }
 
