@@ -62,6 +62,7 @@ func main() {
 	adminHandler      := handler.NewAdminHandler(queries)
 	shareHandler      := handler.NewShareHandler(queries)
 	permissionHandler := handler.NewPermissionHandler(queries)
+	multipartHandler  := handler.NewMultipartHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -103,6 +104,18 @@ func main() {
 		// Upload
 		r.Post("/api/upload/init", uploadHandler.InitUpload)
 		r.Post("/api/upload/confirm/{fileID}", uploadHandler.ConfirmUpload)
+
+		// Preview
+		r.Get("/api/file/{fileID}/preview", filesHandler.PreviewFile)
+
+		// Multipart upload
+		r.Route("/api/s3/multipart", func(r chi.Router) {
+			r.Post("/", multipartHandler.CreateMultipartUpload)
+			r.Get("/{uploadId}", multipartHandler.ListParts)
+			r.Get("/{uploadId}/{partNumber}", multipartHandler.PresignPart)
+			r.Delete("/{uploadId}", multipartHandler.AbortMultipartUpload)
+			r.Post("/{uploadId}/complete", multipartHandler.CompleteMultipartUpload)
+		})
 
 		// Admin
 		r.Route("/admin", func(r chi.Router) {
