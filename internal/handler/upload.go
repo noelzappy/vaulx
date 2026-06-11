@@ -51,7 +51,11 @@ func (h *UploadHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
-	s3Key := fmt.Sprintf("files/%x/%s", b, sanitizeFilename(req.Name))
+	safe := sanitizeFilename(req.Name)
+	if safe == "" {
+		safe = "file"
+	}
+	s3Key := fmt.Sprintf("files/%x/%s", b, safe)
 
 	// Resolve folder UUID (zero value = NULL = root)
 	var folderID pgtype.UUID
@@ -70,6 +74,16 @@ func (h *UploadHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
 		mimeType = &req.MimeType
 	}
 
+	mt := ""
+	if mimeType != nil {
+		mt = *mimeType
+	}
+	uploadURL, err := storage.PresignPUT(r.Context(), s3Key, mt, req.Size)
+	if err != nil {
+		http.Error(w, "failed to generate upload URL", http.StatusInternalServerError)
+		return
+	}
+
 	file, err := h.queries.CreateFile(r.Context(), db.CreateFileParams{
 		FolderID:   folderID,
 		Name:       req.Name,
@@ -80,16 +94,6 @@ func (h *UploadHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		http.Error(w, "failed to create file record", http.StatusInternalServerError)
-		return
-	}
-
-	mt := ""
-	if mimeType != nil {
-		mt = *mimeType
-	}
-	uploadURL, err := storage.PresignPUT(r.Context(), s3Key, mt, req.Size)
-	if err != nil {
-		http.Error(w, "failed to generate upload URL", http.StatusInternalServerError)
 		return
 	}
 
