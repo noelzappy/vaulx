@@ -54,12 +54,13 @@ func main() {
 		Secure:   true,
 	}
 
-	authHandler    := handler.NewAuthHandler(queries, sessionStore)
-	filesHandler   := handler.NewFilesHandler(queries)
-	uploadHandler  := handler.NewUploadHandler(queries)
-	downloadHandler := handler.NewDownloadHandler(queries)
-	adminHandler   := handler.NewAdminHandler(queries)
-	shareHandler   := handler.NewShareHandler(queries)
+	authHandler       := handler.NewAuthHandler(queries, sessionStore)
+	filesHandler      := handler.NewFilesHandler(queries)
+	uploadHandler     := handler.NewUploadHandler(queries)
+	downloadHandler   := handler.NewDownloadHandler(queries)
+	adminHandler      := handler.NewAdminHandler(queries)
+	shareHandler      := handler.NewShareHandler(queries)
+	permissionHandler := handler.NewPermissionHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -95,6 +96,7 @@ func main() {
 
 		// File operations
 		r.Delete("/files/{fileID}", filesHandler.DeleteFile)
+		r.Patch("/files/{fileID}/name", filesHandler.RenameFile)
 		r.Post("/files/{fileID}/share", shareHandler.CreateShare)
 
 		// Upload
@@ -107,6 +109,9 @@ func main() {
 			r.Post("/users", adminHandler.CreateUser)
 			r.Patch("/users/{userID}", adminHandler.UpdateUser)
 			r.Get("/audit", adminHandler.AuditLog)
+			r.Get("/permissions", permissionHandler.List)
+			r.Post("/permissions", permissionHandler.Grant)
+			r.Delete("/permissions/{permID}", permissionHandler.Revoke)
 		})
 	})
 
