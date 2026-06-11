@@ -67,6 +67,12 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	validRoles := map[string]bool{"viewer": true, "editor": true, "admin": true}
+	if !validRoles[role] {
+		http.Error(w, "invalid role", http.StatusBadRequest)
+		return
+	}
+
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
@@ -106,6 +112,11 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if role := r.FormValue("role"); role != "" {
+		validRoles := map[string]bool{"viewer": true, "editor": true, "admin": true}
+		if !validRoles[role] {
+			http.Error(w, "invalid role", http.StatusBadRequest)
+			return
+		}
 		if _, err := h.queries.UpdateUserRole(r.Context(), db.UpdateUserRoleParams{
 			Role: role,
 			ID:   targetUUID,

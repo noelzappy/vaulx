@@ -51,6 +51,7 @@ func main() {
 		MaxAge:   86400 * 7,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
 	}
 
 	authHandler    := handler.NewAuthHandler(queries, sessionStore)

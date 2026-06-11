@@ -119,15 +119,22 @@ func (h *UploadHandler) ConfirmUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, err := h.queries.ActivateFile(r.Context(), fileUUID)
+	// Read the pending record first so ownership can be checked before mutation
+	pending, err := h.queries.GetFile(r.Context(), fileUUID)
 	if err != nil {
-		http.Error(w, "file not found or already active", http.StatusNotFound)
+		http.Error(w, "file not found", http.StatusNotFound)
 		return
 	}
 
 	// Only the uploader or an admin can confirm their own upload
-	if user.Role != "admin" && file.UploadedBy.String() != user.ID {
+	if user.Role != "admin" && pending.UploadedBy.String() != user.ID {
 		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	file, err := h.queries.ActivateFile(r.Context(), fileUUID)
+	if err != nil {
+		http.Error(w, "file not found or already active", http.StatusNotFound)
 		return
 	}
 
