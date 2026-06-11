@@ -1,0 +1,55 @@
+package handler
+
+import (
+	"net/http"
+
+	"github.com/brifafrica/vaulx/internal/auth"
+	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/brifafrica/vaulx/internal/storage"
+	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/go-chi/chi/v5"
+)
+
+type DownloadHandler struct {
+	queries db.Querier
+}
+
+func NewDownloadHandler(q db.Querier) *DownloadHandler {
+	return &DownloadHandler{queries: q}
+}
+
+// GET /files/{fileID}/download
+// Generates a presigned S3 GET URL and redirects the browser to it.
+func (h *DownloadHandler) Download(w http.ResponseWriter, r *http.Request) {
+	user, _ := auth.GetCurrentUser(r.Context())
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if file.Status != "active" {
+		http.NotFound(w, r)
+		return
+	}
+
+	if !auth.CanAccess(user, file.UploadedBy.String()) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	downloadURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	if err != nil {
+		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, downloadURL, http.StatusFound)
+}
