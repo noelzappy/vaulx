@@ -11,6 +11,7 @@ import (
 	"github.com/noelzappy/vaulx/internal/db"
 	"github.com/noelzappy/vaulx/internal/storage"
 	"github.com/noelzappy/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/web/templates"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -106,17 +107,26 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 
 	share, err := h.queries.GetShareBySlug(r.Context(), slug)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		_ = templates.ErrorPage(404, "Not found",
+			"This file or folder doesn't exist, or it's been deleted.",
+		).Render(r.Context(), w)
 		return
 	}
 
 	if share.ExpiresAt.Valid && time.Now().UTC().After(share.ExpiresAt.Time) {
-		http.Error(w, "share link has expired", http.StatusGone)
+		w.WriteHeader(http.StatusGone)
+		_ = templates.ErrorPage(410, "Link expired",
+			"This share link has expired or been revoked.",
+		).Render(r.Context(), w)
 		return
 	}
 
 	if share.MaxViews != nil && share.ViewCount >= *share.MaxViews {
-		http.Error(w, "share link has reached its view limit", http.StatusGone)
+		w.WriteHeader(http.StatusGone)
+		_ = templates.ErrorPage(410, "Link expired",
+			"This share link has expired or been revoked.",
+		).Render(r.Context(), w)
 		return
 	}
 

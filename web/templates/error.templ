@@ -1,0 +1,43 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
+
+// ErrorPage is used on unauthenticated routes (no sidebar).
+templ ErrorPage(code int, title, message string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } — Vaulx</title>
+			<link rel="stylesheet" href="/static/app.css"/>
+		</head>
+		<body>
+			<div class="error-standalone">
+				<div class="error-code">{ intToStr(code) }</div>
+				<h1 class="error-title">{ title }</h1>
+				<p class="error-message">{ message }</p>
+				<a href="javascript:history.back()" class="btn btn-ghost" style="margin-top:24px;">Go back</a>
+			</div>
+		</body>
+	</html>
+}
+
+// AuthErrorPage is used on authenticated routes (shows sidebar via Layout).
+templ AuthErrorPage(code int, title, message string, user viewmodel.UserView) {
+	@Layout("Error", user) {
+		<div class="error-auth">
+			<div class="error-code">{ intToStr(code) }</div>
+			<h1 class="error-title">{ title }</h1>
+			<p class="error-message">{ message }</p>
+			<a href="javascript:history.back()" class="btn btn-ghost" style="margin-top:24px;">Go back</a>
+		</div>
+	}
+}
+
+func intToStr(n int) string {
+	return fmt.Sprintf("%d", n)
+}

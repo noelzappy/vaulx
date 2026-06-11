@@ -23,7 +23,11 @@ func NewAdminHandler(q db.Querier) *AdminHandler {
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())
 	if !ok || user.Role != "admin" {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 
@@ -48,7 +52,11 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())
 	if !ok || user.Role != "admin" {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 
@@ -96,7 +104,11 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())
 	if !ok || user.Role != "admin" {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 
@@ -145,7 +157,11 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())
 	if !ok || user.Role != "admin" {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 

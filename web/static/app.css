@@ -216,3 +216,10 @@ button{cursor:pointer;font:inherit}
   max-width: 160px;
 }
 
+/* Error pages */
+.error-standalone{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:20px}
+.error-auth{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center;padding:20px}
+.error-code{font-size:72px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:12px;opacity:.8}
+.error-title{font-size:22px;font-weight:600;color:var(--text);margin-bottom:10px}
+.error-message{font-size:14px;color:var(--text-muted);max-width:400px;line-height:1.6}
+

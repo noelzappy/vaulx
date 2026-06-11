@@ -7,6 +7,7 @@ import (
 	"github.com/noelzappy/vaulx/internal/db"
 	"github.com/noelzappy/vaulx/internal/storage"
 	"github.com/noelzappy/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/web/templates"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -35,17 +36,29 @@ func (h *DownloadHandler) Download(w http.ResponseWriter, r *http.Request) {
 
 	file, err := h.queries.GetFile(r.Context(), fileUUID)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		_ = templates.AuthErrorPage(404, "Not found",
+			"This file or folder doesn't exist, or it's been deleted.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 
 	if file.Status != "active" {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		_ = templates.AuthErrorPage(404, "Not found",
+			"This file or folder doesn't exist, or it's been deleted.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 
 	if !auth.CanAccess(user, file.UploadedBy.String()) {
-		http.Error(w, "forbidden", http.StatusForbidden)
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 

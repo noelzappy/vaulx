@@ -73,7 +73,11 @@ func (h *FilesHandler) ListFolder(w http.ResponseWriter, r *http.Request) {
 
 	folder, err := h.queries.GetFolder(ctx, folderUUID)
 	if err != nil {
-		http.NotFound(w, r)
+		w.WriteHeader(http.StatusNotFound)
+		_ = templates.AuthErrorPage(404, "Not found",
+			"This file or folder doesn't exist, or it's been deleted.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
 		return
 	}
 	if !auth.CanAccess(user, folder.OwnerID.String()) {
@@ -87,7 +91,11 @@ func (h *FilesHandler) ListFolder(w http.ResponseWriter, r *http.Request) {
 			})
 		}
 		if !hasPerm {
-			http.Error(w, "forbidden", http.StatusForbidden)
+			w.WriteHeader(http.StatusForbidden)
+			_ = templates.AuthErrorPage(403, "Access denied",
+				"You don't have permission to view this. Contact your admin to request access.",
+				viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+			).Render(r.Context(), w)
 			return
 		}
 	}
