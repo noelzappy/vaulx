@@ -13,6 +13,8 @@ import (
 type Querier interface {
 	ActivateFile(ctx context.Context, id pgtype.UUID) (File, error)
 	CheckPermission(ctx context.Context, arg CheckPermissionParams) (bool, error)
+	CountAuditLog(ctx context.Context) (int64, error)
+	CountFiles(ctx context.Context, folderID pgtype.UUID) (int64, error)
 	CountFolderItems(ctx context.Context, parentID pgtype.UUID) (int64, error)
 	CountUsers(ctx context.Context) (int64, error)
 	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error)
@@ -31,8 +33,10 @@ type Querier interface {
 	GrantPermission(ctx context.Context, arg GrantPermissionParams) (Permission, error)
 	IncrementShareViewCount(ctx context.Context, id pgtype.UUID) error
 	ListAuditLogByAction(ctx context.Context, arg ListAuditLogByActionParams) ([]ListAuditLogByActionRow, error)
+	ListAuditLogPage(ctx context.Context, arg ListAuditLogPageParams) ([]ListAuditLogPageRow, error)
 	ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) ([]File, error)
 	ListFilesByFolderForUser(ctx context.Context, arg ListFilesByFolderForUserParams) ([]File, error)
+	ListFilesPage(ctx context.Context, arg ListFilesPageParams) ([]File, error)
 	ListFoldersByParent(ctx context.Context, parentID pgtype.UUID) ([]Folder, error)
 	ListFoldersByParentForUser(ctx context.Context, arg ListFoldersByParentForUserParams) ([]Folder, error)
 	ListPermissionsForResource(ctx context.Context, arg ListPermissionsForResourceParams) ([]ListPermissionsForResourceRow, error)
@@ -45,6 +49,7 @@ type Querier interface {
 	RevokePermission(ctx context.Context, id pgtype.UUID) error
 	SoftDeleteFile(ctx context.Context, id pgtype.UUID) error
 	UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error)
+	UpdateFileSizeAndStatus(ctx context.Context, arg UpdateFileSizeAndStatusParams) (File, error)
 	UpdateFolderName(ctx context.Context, arg UpdateFolderNameParams) (Folder, error)
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error)
 }
