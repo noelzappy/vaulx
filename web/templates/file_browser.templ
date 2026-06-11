@@ -76,7 +76,7 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 				<p class="section-heading">Files</p>
 				<div class="file-grid">
 					for _, file := range data.Files {
-						@FileCard(file)
+						@FileCard(file, user.Role == "admin" || (user.Role == "editor" && file.UploaderID == user.ID))
 					}
 				</div>
 			}

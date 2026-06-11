@@ -2,7 +2,7 @@ package templates
 
 import "github.com/brifafrica/vaulx/internal/viewmodel"
 
-templ FileCard(file viewmodel.FileView) {
+templ FileCard(file viewmodel.FileView, canEdit bool) {
 	<div class="card" title={ file.Name }>
 		<div class="card-actions">
 			<a
@@ -10,7 +10,21 @@ templ FileCard(file viewmodel.FileView) {
 				href={ templ.SafeURL("/files/" + file.ID + "/download") }
 				onclick="event.stopPropagation()"
 			>Download</a>
-			<button class="card-btn" onclick="event.stopPropagation()">Share</button>
+			<button
+				class="card-btn"
+				data-file-id={ file.ID }
+				onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
+			>Share</button>
+			if canEdit {
+				<button
+					class="card-btn card-btn-danger"
+					hx-delete={ "/files/" + file.ID }
+					hx-confirm={ "Delete \"" + file.Name + "\"? This cannot be undone." }
+					hx-target="closest .card"
+					hx-swap="outerHTML swap:0.3s"
+					onclick="event.stopPropagation()"
+				>Delete</button>
+			}
 		</div>
 		<div class="card-icon">
 			@fileTypeIcon(file.MimeType)

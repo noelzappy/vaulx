@@ -165,7 +165,7 @@ func FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView)
 					return templ_7745c5c3_Err
 				}
 				for _, file := range data.Files {
-					templ_7745c5c3_Err = FileCard(file).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = FileCard(file, user.Role == "admin" || (user.Role == "editor" && file.UploaderID == user.ID)).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}

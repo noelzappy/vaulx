@@ -260,6 +260,53 @@ func (h *FilesHandler) RenameFolder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// DELETE /files/{fileID}
+func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if user.Role != "admin" && file.UploadedBy.String() != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	if err := h.queries.SoftDeleteFile(r.Context(), fileUUID); err != nil {
+		http.Error(w, "failed to delete file", http.StatusInternalServerError)
+		return
+	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "file"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "file.delete",
+		ResourceType: &resourceType,
+		ResourceID:   fileUUID,
+	})
+
+	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File deleted","type":"success"}}`)
+	w.WriteHeader(http.StatusOK)
+}
+
 func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, dbFiles []db.File) ([]viewmodel.FolderView, []viewmodel.FileView) {
 	folders := make([]viewmodel.FolderView, 0, len(dbFolders))
 	for _, f := range dbFolders {
