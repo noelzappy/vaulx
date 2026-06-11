@@ -16,6 +16,7 @@ import (
 	"github.com/noelzappy/vaulx/internal/storage"
 	"github.com/noelzappy/vaulx/migrations"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/httprate"
 	chimw "github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -35,7 +36,7 @@ func main() {
 	db.Connect(ctx)
 
 	if err := storage.Connect(ctx); err != nil {
-		log.Printf("storage: %v (continuing — S3 not required for Phase 1)", err)
+		log.Fatalf("fatal: cannot connect to S3 storage: %v", err)
 	}
 
 	queries := db.New(db.DB)
@@ -70,7 +71,7 @@ func main() {
 
 	r.Route("/auth", func(r chi.Router) {
 		r.Get("/login", authHandler.LoginPage)
-		r.Post("/login", authHandler.LoginPage)
+		r.With(httprate.LimitByIP(10, 1*time.Minute)).Post("/login", authHandler.LoginPage)
 		r.Post("/logout", authHandler.Logout)
 	})
 

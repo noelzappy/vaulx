@@ -1,6 +1,7 @@
 .PHONY: generate build dev
 
 generate:
+	sqlc generate
 	templ generate
 
 build: generate
