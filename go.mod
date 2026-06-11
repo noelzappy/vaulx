@@ -1,4 +1,4 @@
-module github.com/brifafrica/vaulx
+module github.com/noelzappy/vaulx
 
 go 1.25.0
 

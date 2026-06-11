@@ -52,7 +52,7 @@ func LoginPage(errorMsg string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/auth/login\"><div class=\"form-group\"><label class=\"form-label\" for=\"email\">Email</label> <input class=\"input\" type=\"email\" id=\"email\" name=\"email\" placeholder=\"you@brif.africa\" required autofocus></div><div class=\"form-group\"><label class=\"form-label\" for=\"password\">Password</label> <input class=\"input\" type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" required></div><button class=\"btn btn-primary\" style=\"width:100%;margin-top:8px;justify-content:center;\" type=\"submit\">Sign in</button></form></div></div></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<form method=\"POST\" action=\"/auth/login\"><div class=\"form-group\"><label class=\"form-label\" for=\"email\">Email</label> <input class=\"input\" type=\"email\" id=\"email\" name=\"email\" placeholder=\"you@example.com\" required autofocus></div><div class=\"form-group\"><label class=\"form-label\" for=\"password\">Password</label> <input class=\"input\" type=\"password\" id=\"password\" name=\"password\" placeholder=\"••••••••\" required></div><button class=\"btn btn-primary\" style=\"width:100%;margin-top:8px;justify-content:center;\" type=\"submit\">Sign in</button></form></div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

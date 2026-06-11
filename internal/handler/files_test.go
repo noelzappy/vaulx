@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/brifafrica/vaulx/internal/auth"
-	"github.com/brifafrica/vaulx/internal/handler"
+	"github.com/noelzappy/vaulx/internal/auth"
+	"github.com/noelzappy/vaulx/internal/handler"
 )
 
 func TestDeleteFile_HardDelete_NonAdminForbidden(t *testing.T) {

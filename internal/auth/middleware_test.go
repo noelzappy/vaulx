@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/brifafrica/vaulx/internal/auth"
+	"github.com/noelzappy/vaulx/internal/auth"
 	"github.com/gorilla/sessions"
 )
 

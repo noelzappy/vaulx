@@ -1,6 +1,6 @@
 package templates
 
-import "github.com/brifafrica/vaulx/internal/viewmodel"
+import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 templ AdminUsersPage(users []viewmodel.UserView, currentUser viewmodel.UserView) {
 	@Layout("Users", currentUser) {
@@ -28,7 +28,7 @@ templ AdminUsersContent(users []viewmodel.UserView) {
 				<form method="POST" action="/admin/users">
 					<div class="form-group">
 						<label class="form-label" for="email">Email</label>
-						<input class="input" type="email" id="email" name="email" placeholder="user@brif.africa" required/>
+						<input class="input" type="email" id="email" name="email" placeholder="user@example.com" required/>
 					</div>
 					<div class="form-group">
 						<label class="form-label" for="name">Full Name</label>

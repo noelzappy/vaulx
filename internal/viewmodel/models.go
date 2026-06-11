@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/db"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 

@@ -1,6 +1,6 @@
 package templates
 
-import "github.com/brifafrica/vaulx/internal/viewmodel"
+import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, currentUser viewmodel.UserView) {
 	@Layout("Audit Log", currentUser) {

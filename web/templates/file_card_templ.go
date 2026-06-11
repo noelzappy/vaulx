@@ -8,7 +8,7 @@ package templates
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "github.com/brifafrica/vaulx/internal/viewmodel"
+import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 func FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {

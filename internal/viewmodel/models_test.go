@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
 )
 
 func TestHumanSize(t *testing.T) {

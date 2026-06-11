@@ -3,9 +3,9 @@ package handler
 import (
 	"net/http"
 
-	"github.com/brifafrica/vaulx/internal/db"
-	"github.com/brifafrica/vaulx/internal/viewmodel"
-	"github.com/brifafrica/vaulx/web/templates"
+	"github.com/noelzappy/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/web/templates"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )

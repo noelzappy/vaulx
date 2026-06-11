@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/db"
 	"golang.org/x/crypto/bcrypt"
 )
 

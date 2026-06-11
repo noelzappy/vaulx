@@ -3,10 +3,10 @@ package handler
 import (
 	"net/http"
 
-	"github.com/brifafrica/vaulx/internal/auth"
-	"github.com/brifafrica/vaulx/internal/db"
-	"github.com/brifafrica/vaulx/internal/storage"
-	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/internal/auth"
+	"github.com/noelzappy/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/storage"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
 	"github.com/go-chi/chi/v5"
 )
 

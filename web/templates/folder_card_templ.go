@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import (
 	"fmt"
-	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
 )
 
 func FolderCard(folder viewmodel.FolderView) templ.Component {

@@ -3,7 +3,7 @@ package auth_test
 import (
 	"testing"
 
-	"github.com/brifafrica/vaulx/internal/auth"
+	"github.com/noelzappy/vaulx/internal/auth"
 )
 
 func TestCanAccess(t *testing.T) {

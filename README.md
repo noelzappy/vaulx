@@ -1,6 +1,6 @@
 # Vaulx
 
-A private file asset platform for Brif Africa. Upload, organise, and share files with role-based access control and a clean, fast interface.
+A private file asset platform. Upload, organise, and share files with role-based access control and a clean, fast interface.
 
 ## Features
 
