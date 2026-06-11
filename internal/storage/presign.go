@@ -42,6 +42,21 @@ func PresignGET(ctx context.Context, key string) (string, error) {
 	return req.URL, nil
 }
 
+// PresignGETWithTTL returns a presigned URL for a file download with a custom TTL.
+func PresignGETWithTTL(ctx context.Context, key string, ttl time.Duration) (string, error) {
+	if PresignClient == nil {
+		return "", fmt.Errorf("storage: not connected")
+	}
+	req, err := PresignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(Bucket),
+		Key:    aws.String(key),
+	}, s3.WithPresignExpires(ttl))
+	if err != nil {
+		return "", fmt.Errorf("storage: presign GET %s: %w", key, err)
+	}
+	return req.URL, nil
+}
+
 // DeleteObject permanently removes an object from S3/Hetzner storage.
 func DeleteObject(ctx context.Context, key string) error {
 	if Client == nil {
