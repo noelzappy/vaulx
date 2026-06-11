@@ -77,8 +77,19 @@ func (h *FilesHandler) ListFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !auth.CanAccess(user, folder.OwnerID.String()) {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
+		userUUID, uuidErr := viewmodel.UUIDFromString(user.ID)
+		hasPerm := false
+		if uuidErr == nil {
+			hasPerm, _ = h.queries.CheckPermission(r.Context(), db.CheckPermissionParams{
+				UserID:       userUUID,
+				ResourceType: "folder",
+				ResourceID:   folderUUID,
+			})
+		}
+		if !hasPerm {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
 	}
 
 	var dbFolders []db.Folder

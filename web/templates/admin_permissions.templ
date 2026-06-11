@@ -1,0 +1,88 @@
+package templates
+
+import "github.com/brifafrica/vaulx/internal/viewmodel"
+
+templ AdminPermissionsPage(data viewmodel.PermissionsPageData, currentUser viewmodel.UserView) {
+	@Layout("Permissions — "+data.ResourceName, currentUser) {
+		<div>
+			<div class="toolbar" style="margin-bottom:24px;">
+				<div>
+					<h1 style="font-size:18px;font-weight:600;">Manage Access</h1>
+					<p style="font-size:12.5px;color:var(--text-muted);margin-top:4px;">
+						{ data.ResourceType }: <span style="font-family:monospace;">{ data.ResourceName }</span>
+					</p>
+				</div>
+				<a href="/files" class="btn btn-ghost" style="font-size:12.5px;">← Back to files</a>
+			</div>
+			<div style="display:grid;gap:24px;max-width:680px;">
+				<div class="card" style="padding:20px;">
+					<h2 style="font-size:14px;font-weight:600;margin-bottom:16px;">Current grants</h2>
+					if len(data.Permissions) == 0 {
+						<p style="font-size:12.5px;color:var(--text-faint);">No grants yet. Add one below.</p>
+					} else {
+						<table class="data-table">
+							<thead>
+								<tr>
+									<th>User</th>
+									<th>Level</th>
+									<th>Actions</th>
+								</tr>
+							</thead>
+							<tbody>
+								for _, p := range data.Permissions {
+									<tr id={ "perm-" + p.ID }>
+										<td>
+											<span style="font-weight:500;">{ p.GranteeName }</span>
+											<span style="font-size:11px;color:var(--text-faint);margin-left:6px;">{ p.GranteeEmail }</span>
+										</td>
+										<td><span class="badge">{ p.Level }</span></td>
+										<td>
+											<button
+												class="card-btn card-btn-danger"
+												hx-delete={ "/admin/permissions/" + p.ID }
+												hx-confirm="Revoke this access grant?"
+												hx-target={ "#perm-" + p.ID }
+												hx-swap="outerHTML swap:0.3s"
+											>Revoke</button>
+										</td>
+									</tr>
+								}
+							</tbody>
+						</table>
+					}
+				</div>
+				<div class="card" style="padding:20px;">
+					<h2 style="font-size:14px;font-weight:600;margin-bottom:16px;">Grant access</h2>
+					<form
+						method="POST"
+						action="/admin/permissions"
+						style="display:flex;flex-direction:column;gap:12px;"
+					>
+						<input type="hidden" name="resource_type" value={ data.ResourceType }/>
+						<input type="hidden" name="resource_id" value={ data.ResourceID }/>
+						<div style="display:flex;gap:10px;align-items:flex-end;">
+							<div style="flex:1;">
+								<label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">User</label>
+								<select class="input" name="user_id" required style="width:100%;">
+									<option value="">Select a user…</option>
+									for _, u := range data.Users {
+										<option value={ u.ID }>{ u.Name } ({ u.Email })</option>
+									}
+								</select>
+							</div>
+							<div>
+								<label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">Level</label>
+								<select class="input" name="level" style="width:auto;">
+									<option value="view">view</option>
+									<option value="edit">edit</option>
+									<option value="manage">manage</option>
+								</select>
+							</div>
+							<button class="btn btn-primary" type="submit">Grant</button>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	}
+}
