@@ -3,7 +3,9 @@ package handler
 import (
 	"context"
 	"net/http"
+	"strconv"
 
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/noelzappy/vaulx/internal/auth"
 	"github.com/noelzappy/vaulx/internal/db"
 	"github.com/noelzappy/vaulx/internal/storage"
@@ -20,22 +22,49 @@ func NewFilesHandler(q db.Querier) *FilesHandler {
 	return &FilesHandler{queries: q}
 }
 
+func parsePage(r *http.Request) (page, limit int) {
+	page = 1
+	limit = 48
+	if p := r.URL.Query().Get("page"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			page = n
+		}
+	}
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if n, err := strconv.Atoi(l); err == nil && n > 0 && n <= 100 {
+			limit = n
+		}
+	}
+	return
+}
+
 // GET /files — root-level folders and files.
 func (h *FilesHandler) List(w http.ResponseWriter, r *http.Request) {
 	user, _ := auth.GetCurrentUser(r.Context())
 	ctx := r.Context()
 
+	page, limit := parsePage(r)
+	offset := int32((page - 1) * limit)
+
 	var (
-		dbFolders []db.Folder
-		dbFiles   []db.File
-		err       error
+		dbFolders  []db.Folder
+		dbFiles    []db.File
+		totalFiles int64
+		err        error
 	)
 
 	userUUID, uuidErr := viewmodel.UUIDFromString(user.ID)
 	if user.Role == "admin" || uuidErr != nil {
 		dbFolders, err = h.queries.ListRootFolders(ctx)
 		if err == nil {
-			dbFiles, err = h.queries.ListRootFiles(ctx)
+			dbFiles, err = h.queries.ListFilesPage(ctx, db.ListFilesPageParams{
+				FolderID: pgtype.UUID{Valid: false},
+				Limit:    int32(limit),
+				Offset:   offset,
+			})
+		}
+		if err == nil {
+			totalFiles, err = h.queries.CountFiles(ctx, pgtype.UUID{Valid: false})
 		}
 	} else {
 		dbFolders, err = h.queries.ListRootFoldersForUser(ctx, userUUID)
@@ -49,10 +78,15 @@ func (h *FilesHandler) List(w http.ResponseWriter, r *http.Request) {
 	}
 
 	folders, files := h.buildViews(ctx, dbFolders, dbFiles)
+	var pagination *viewmodel.PaginationData
+	if user.Role == "admin" {
+		pagination = viewmodel.NewPagination(page, limit, totalFiles)
+	}
 	data := viewmodel.FileBrowserData{
 		Folders:     folders,
 		Files:       files,
 		Breadcrumbs: []viewmodel.BreadcrumbItem{{Name: "My Files", URL: "/files"}},
+		Pagination:  pagination,
 	}
 	renderFileBrowser(w, r, data, viewmodel.UserView{
 		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
@@ -100,14 +134,27 @@ func (h *FilesHandler) ListFolder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	var dbFolders []db.Folder
-	var dbFiles []db.File
-	userUUID, uuidErr := viewmodel.UUIDFromString(user.ID)
+	page, limit := parsePage(r)
+	offset := int32((page - 1) * limit)
 
+	var (
+		dbFolders  []db.Folder
+		dbFiles    []db.File
+		totalFiles int64
+	)
+
+	userUUID, uuidErr := viewmodel.UUIDFromString(user.ID)
 	if user.Role == "admin" || uuidErr != nil {
 		dbFolders, err = h.queries.ListFoldersByParent(ctx, folderUUID)
 		if err == nil {
-			dbFiles, err = h.queries.ListFilesByFolder(ctx, folderUUID)
+			dbFiles, err = h.queries.ListFilesPage(ctx, db.ListFilesPageParams{
+				FolderID: folderUUID,
+				Limit:    int32(limit),
+				Offset:   offset,
+			})
+		}
+		if err == nil {
+			totalFiles, err = h.queries.CountFiles(ctx, folderUUID)
 		}
 	} else {
 		dbFolders, err = h.queries.ListFoldersByParentForUser(ctx, db.ListFoldersByParentForUserParams{
@@ -122,18 +169,23 @@ func (h *FilesHandler) ListFolder(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	if err != nil {
-		http.Error(w, "failed to list folder contents", http.StatusInternalServerError)
+		http.Error(w, "failed to load folder contents", http.StatusInternalServerError)
 		return
 	}
 
 	breadcrumbs := h.buildBreadcrumbs(ctx, folder)
 	folders, files := h.buildViews(ctx, dbFolders, dbFiles)
 
+	var pagination *viewmodel.PaginationData
+	if user.Role == "admin" {
+		pagination = viewmodel.NewPagination(page, limit, totalFiles)
+	}
 	data := viewmodel.FileBrowserData{
 		Folders:     folders,
 		Files:       files,
 		Breadcrumbs: breadcrumbs,
 		FolderID:    folderIDStr,
+		Pagination:  pagination,
 	}
 	renderFileBrowser(w, r, data, viewmodel.UserView{
 		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,

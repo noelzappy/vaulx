@@ -1,6 +1,9 @@
 package templates
 
-import "github.com/noelzappy/vaulx/internal/viewmodel"
+import (
+	"fmt"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
 
 templ FilesPage(data viewmodel.FileBrowserData, user viewmodel.UserView) {
 	@Layout("My Files", user) {
@@ -84,6 +87,9 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 				</div>
 			}
 		}
+		if data.Pagination != nil {
+			@PaginationBar(*data.Pagination, currentBrowserURL(data))
+		}
 	</div>
 }
 
@@ -104,4 +110,41 @@ templ Breadcrumb(crumbs []viewmodel.BreadcrumbItem) {
 			}
 		}
 	</nav>
+}
+
+templ PaginationBar(p viewmodel.PaginationData, baseURL string) {
+	<div class="pagination-bar">
+		if p.Page > 1 {
+			<a
+				class="btn btn-ghost"
+				href={ templ.SafeURL(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page-1, p.Limit)) }
+				hx-get={ fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page-1, p.Limit) }
+				hx-target="#browser-content"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+			>Previous</a>
+		} else {
+			<span class="btn btn-ghost" style="opacity:.35;cursor:default;">Previous</span>
+		}
+		<span class="pagination-info">Page { fmt.Sprintf("%d", p.Page) } of { fmt.Sprintf("%d", p.TotalPages) }</span>
+		if p.Page < p.TotalPages {
+			<a
+				class="btn btn-ghost"
+				href={ templ.SafeURL(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page+1, p.Limit)) }
+				hx-get={ fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page+1, p.Limit) }
+				hx-target="#browser-content"
+				hx-swap="outerHTML"
+				hx-push-url="true"
+			>Next</a>
+		} else {
+			<span class="btn btn-ghost" style="opacity:.35;cursor:default;">Next</span>
+		}
+	</div>
+}
+
+func currentBrowserURL(data viewmodel.FileBrowserData) string {
+	if data.FolderID != "" {
+		return "/files/" + data.FolderID
+	}
+	return "/files"
 }

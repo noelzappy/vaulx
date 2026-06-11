@@ -45,11 +45,35 @@ type BreadcrumbItem struct {
 	URL  string
 }
 
+type PaginationData struct {
+	Page       int
+	Limit      int
+	Total      int64
+	TotalPages int
+}
+
+func NewPagination(page, limit int, total int64) *PaginationData {
+	if total == 0 {
+		return nil
+	}
+	totalPages := int((total + int64(limit) - 1) / int64(limit))
+	if totalPages <= 1 {
+		return nil
+	}
+	return &PaginationData{
+		Page:       page,
+		Limit:      limit,
+		Total:      total,
+		TotalPages: totalPages,
+	}
+}
+
 type FileBrowserData struct {
 	Folders     []FolderView
 	Files       []FileView
 	Breadcrumbs []BreadcrumbItem
 	FolderID    string
+	Pagination  *PaginationData // nil = no pagination bar
 }
 
 func HumanSize(bytes int64) string {
