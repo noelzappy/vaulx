@@ -41,3 +41,6 @@ RETURNING *;
 
 -- name: SoftDeleteFile :exec
 UPDATE files SET status = 'deleted' WHERE id = $1;
+
+-- name: UpdateFileName :one
+UPDATE files SET name = $1 WHERE id = $2 AND status = 'active' RETURNING *;

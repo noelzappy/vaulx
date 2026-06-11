@@ -41,3 +41,18 @@ func PresignGET(ctx context.Context, key string) (string, error) {
 	}
 	return req.URL, nil
 }
+
+// DeleteObject permanently removes an object from S3/Hetzner storage.
+func DeleteObject(ctx context.Context, key string) error {
+	if Client == nil {
+		return fmt.Errorf("storage: not connected")
+	}
+	_, err := Client.DeleteObject(ctx, &s3.DeleteObjectInput{
+		Bucket: aws.String(Bucket),
+		Key:    aws.String(key),
+	})
+	if err != nil {
+		return fmt.Errorf("storage: delete %s: %w", key, err)
+	}
+	return nil
+}
