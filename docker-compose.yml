@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: vaulx
+      POSTGRES_PASSWORD: vaulx
+      POSTGRES_DB: vaulx
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vaulx"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: postgres://vaulx:vaulx@db:5432/vaulx?sslmode=disable
+      SESSION_SECRET: change-me-to-a-random-32-char-string
+      PORT: 8080
+      SEED_ADMIN_EMAIL: admin@example.com
+      SEED_ADMIN_PASSWORD: AdminPass1234!
+      HETZNER_ACCESS_KEY: ""
+      HETZNER_SECRET_KEY: ""
+      HETZNER_S3_ENDPOINT: https://fsn1.your-objectstorage.com
+      HETZNER_BUCKET: vaulx
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
