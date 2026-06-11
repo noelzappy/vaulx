@@ -1,0 +1,90 @@
+package templates
+
+import (
+	"strings"
+
+	"github.com/noelzappy/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
+
+templ PreviewPanel(file db.File, uploaderName string, presignedURL string) {
+	<div class="preview-header">
+		<span class="preview-filename" title={ file.Name }>{ file.Name }</span>
+		<button
+			class="preview-close"
+			x-on:click.stop="previewOpen = false"
+			aria-label="Close preview"
+		>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+			</svg>
+		</button>
+	</div>
+	<div class="preview-media">
+		@previewArea(mimeType(file), presignedURL, file.Name)
+	</div>
+	<div class="preview-meta">
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Size</span>
+			<span>{ viewmodel.HumanSize(file.SizeBytes) }</span>
+		</div>
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Uploaded by</span>
+			<span>{ uploaderName }</span>
+		</div>
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Date</span>
+			<span>{ viewmodel.RelativeTime(file.CreatedAt.Time) }</span>
+		</div>
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Type</span>
+			<span>{ mimeType(file) }</span>
+		</div>
+	</div>
+	<div class="preview-actions">
+		<a class="btn btn-primary" href={ templ.SafeURL("/files/" + file.ID.String() + "/download") }>
+			Download
+		</a>
+		<button
+			class="btn btn-ghost"
+			data-file-id={ file.ID.String() }
+			onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
+		>Share</button>
+	</div>
+}
+
+templ previewArea(mime, url, name string) {
+	if strings.HasPrefix(mime, "video/") {
+		<video controls preload="metadata" src={ url } style="width:100%;max-height:280px;background:#000;">
+			Your browser does not support video.
+		</video>
+	} else if strings.HasPrefix(mime, "image/") {
+		<img src={ url } alt={ name } style="width:100%;object-fit:contain;max-height:280px;"/>
+	} else if mime == "application/pdf" {
+		<iframe src={ url } style="width:100%;height:280px;border:none;"></iframe>
+	} else {
+		<div class="preview-no-preview">
+			<span class="preview-ext">{ fileExt(name) }</span>
+			<span style="font-size:12px;color:var(--text-muted);margin-top:8px;">No preview available</span>
+		</div>
+	}
+}
+
+func mimeType(file db.File) string {
+	if file.MimeType != nil {
+		return *file.MimeType
+	}
+	return ""
+}
+
+func fileExt(name string) string {
+	idx := strings.LastIndex(name, ".")
+	if idx < 0 || idx == len(name)-1 {
+		return "FILE"
+	}
+	ext := strings.ToUpper(name[idx+1:])
+	if len(ext) > 6 {
+		return ext[:6]
+	}
+	return ext
+}

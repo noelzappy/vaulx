@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/noelzappy/vaulx/internal/auth"
@@ -465,6 +466,65 @@ func (h *FilesHandler) RenameFile(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File renamed","type":"success"}}`)
 	_ = templates.FileCard(fv, canEdit, canHardDelete).Render(r.Context(), w)
+}
+
+// GET /api/file/{fileID}/preview — HTMX partial, returns PreviewPanel HTML
+func (h *FilesHandler) PreviewFile(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil || file.Status != "active" {
+		w.WriteHeader(http.StatusNotFound)
+		_ = templates.AuthErrorPage(404, "Not found",
+			"This file or folder doesn't exist, or it's been deleted.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
+		return
+	}
+
+	if !auth.CanAccess(user, file.UploadedBy.String()) {
+		userUUID, uuidErr := viewmodel.UUIDFromString(user.ID)
+		hasPerm := false
+		if uuidErr == nil {
+			hasPerm, _ = h.queries.CheckPermission(r.Context(), db.CheckPermissionParams{
+				UserID:       userUUID,
+				ResourceType: "file",
+				ResourceID:   fileUUID,
+			})
+		}
+		if !hasPerm {
+			w.WriteHeader(http.StatusForbidden)
+			_ = templates.AuthErrorPage(403, "Access denied",
+				"You don't have permission to view this. Contact your admin to request access.",
+				viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+			).Render(r.Context(), w)
+			return
+		}
+	}
+
+	presignedURL, err := storage.PresignGETWithTTL(r.Context(), file.S3Key, 5*time.Minute)
+	if err != nil {
+		http.Error(w, "failed to generate preview URL", http.StatusInternalServerError)
+		return
+	}
+
+	uploaderName := ""
+	if u, err := h.queries.GetUserByID(r.Context(), file.UploadedBy); err == nil {
+		uploaderName = u.Name
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.PreviewPanel(file, uploaderName, presignedURL).Render(r.Context(), w)
 }
 
 func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, dbFiles []db.File) ([]viewmodel.FolderView, []viewmodel.FileView) {

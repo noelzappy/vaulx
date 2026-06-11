@@ -58,3 +58,19 @@ func TestRenameFile_BadUUID(t *testing.T) {
 		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }
+
+func TestPreviewFile_Forbidden(t *testing.T) {
+	h := handler.NewFilesHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/file/some-id/preview", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "viewer"})
+	ctx = withChiParam(ctx, "fileID", "not-a-uuid")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.PreviewFile(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for bad UUID, got %d", rr.Code)
+	}
+}
