@@ -140,3 +140,54 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"User updated","type":"success"}}`)
 	w.WriteHeader(http.StatusOK)
 }
+
+// GET /admin/audit?action=<optional>
+func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	actionFilter := r.URL.Query().Get("action")
+
+	var entries []viewmodel.AuditLogView
+
+	if actionFilter != "" {
+		rows, err := h.queries.ListAuditLogByAction(r.Context(), db.ListAuditLogByActionParams{
+			Action: actionFilter,
+			Limit:  100,
+		})
+		if err != nil {
+			http.Error(w, "failed to load audit log", http.StatusInternalServerError)
+			return
+		}
+		for _, row := range rows {
+			entries = append(entries, viewmodel.AuditLogViewFromRow(
+				row.ID, row.Action, row.ResourceType, row.ResourceID,
+				row.CreatedAt, row.ActorName, row.ActorEmail,
+			))
+		}
+	} else {
+		rows, err := h.queries.ListRecentAuditLog(r.Context(), 100)
+		if err != nil {
+			http.Error(w, "failed to load audit log", http.StatusInternalServerError)
+			return
+		}
+		for _, row := range rows {
+			entries = append(entries, viewmodel.AuditLogViewFromRow(
+				row.ID, row.Action, row.ResourceType, row.ResourceID,
+				row.CreatedAt, row.ActorName, row.ActorEmail,
+			))
+		}
+	}
+
+	if entries == nil {
+		entries = []viewmodel.AuditLogView{}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.AdminAuditPage(entries, actionFilter, viewmodel.UserView{
+		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
+	}).Render(r.Context(), w)
+}

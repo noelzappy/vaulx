@@ -56,3 +56,20 @@ func TestUpdateUser_NonAdminForbidden(t *testing.T) {
 		t.Errorf("expected 403, got %d", rr.Code)
 	}
 }
+
+func TestAuditLog_NonAdminForbidden(t *testing.T) {
+	h := handler.NewAdminHandler(nil)
+
+	for _, role := range []string{"editor", "viewer"} {
+		req := httptest.NewRequest(http.MethodGet, "/admin/audit", nil)
+		ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: role})
+		req = req.WithContext(ctx)
+		rr := httptest.NewRecorder()
+
+		h.AuditLog(rr, req)
+
+		if rr.Code != http.StatusForbidden {
+			t.Errorf("role %q: expected 403, got %d", role, rr.Code)
+		}
+	}
+}

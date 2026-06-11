@@ -1,0 +1,85 @@
+package templates
+
+import "github.com/brifafrica/vaulx/internal/viewmodel"
+
+templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, currentUser viewmodel.UserView) {
+	@Layout("Audit Log", currentUser) {
+		<div>
+			<div class="toolbar" style="margin-bottom:24px;">
+				<h1 style="font-size:18px;font-weight:600;">Audit Log</h1>
+				<div style="display:flex;gap:8px;align-items:center;">
+					<span style="font-size:12px;color:var(--text-muted);">Filter:</span>
+					<select
+						class="input"
+						style="width:auto;padding:6px 10px;font-size:12.5px;"
+						onchange="window.location='/admin/audit' + (this.value ? '?action=' + this.value : '')"
+					>
+						<option value="" selected?={ activeFilter == "" }>All actions</option>
+						<option value="auth.login" selected?={ activeFilter == "auth.login" }>auth.login</option>
+						<option value="file.upload" selected?={ activeFilter == "file.upload" }>file.upload</option>
+						<option value="file.delete" selected?={ activeFilter == "file.delete" }>file.delete</option>
+						<option value="folder.create" selected?={ activeFilter == "folder.create" }>folder.create</option>
+						<option value="folder.rename" selected?={ activeFilter == "folder.rename" }>folder.rename</option>
+						<option value="folder.delete" selected?={ activeFilter == "folder.delete" }>folder.delete</option>
+					</select>
+				</div>
+			</div>
+			if len(entries) == 0 {
+				<div class="empty-state">
+					<p>No audit log entries found.</p>
+				</div>
+			} else {
+				<div class="card" style="padding:0;overflow:hidden;">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Time</th>
+								<th>Actor</th>
+								<th>Action</th>
+								<th>Resource</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, e := range entries {
+								<tr>
+									<td style="white-space:nowrap;font-size:12px;color:var(--text-faint);">{ e.CreatedAt }</td>
+									<td>
+										if e.ActorName != "" {
+											<span style="color:var(--text);font-weight:500;">{ e.ActorName }</span>
+										} else {
+											<span style="color:var(--text-faint);">—</span>
+										}
+									</td>
+									<td>
+										<span class="badge" style={ auditActionBadgeStyle(e.Action) }>{ e.Action }</span>
+									</td>
+									<td style="font-size:12px;color:var(--text-muted);">
+										if e.ResourceType != "" {
+											{ e.ResourceType }
+											if len(e.ResourceID) >= 8 {
+												<span style="font-family:monospace;font-size:11px;color:var(--text-faint);margin-left:4px;">{ e.ResourceID[:8] }…</span>
+											}
+										}
+									</td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</div>
+	}
+}
+
+func auditActionBadgeStyle(action string) string {
+	if len(action) >= 4 && action[:4] == "auth" {
+		return "background:rgba(96,165,250,0.12);color:#60a5fa;"
+	}
+	if len(action) >= 4 && action[:4] == "file" {
+		return "background:rgba(240,165,0,0.12);color:var(--accent);"
+	}
+	if len(action) >= 6 && action[:6] == "folder" {
+		return "background:rgba(63,185,80,0.1);color:var(--success);"
+	}
+	return "background:var(--bg-card);color:var(--text-muted);"
+}
