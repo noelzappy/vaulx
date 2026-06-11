@@ -53,8 +53,11 @@ func main() {
 		SameSite: http.SameSiteLaxMode,
 	}
 
-	authHandler := handler.NewAuthHandler(queries, sessionStore)
-	filesHandler := handler.NewFilesHandler(queries)
+	authHandler    := handler.NewAuthHandler(queries, sessionStore)
+	filesHandler   := handler.NewFilesHandler(queries)
+	uploadHandler  := handler.NewUploadHandler(queries, nil)
+	downloadHandler := handler.NewDownloadHandler(queries)
+	adminHandler   := handler.NewAdminHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -75,10 +78,26 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
 		r.Get("/files", filesHandler.List)
-		r.Get("/files/{folderID}", filesHandler.ListFolder)
 		r.Post("/files/folders", filesHandler.CreateFolder)
 		r.Delete("/files/folders/{folderID}", filesHandler.DeleteFolder)
 		r.Patch("/files/folders/{folderID}", filesHandler.RenameFolder)
+
+		// Download — registered BEFORE /files/{folderID} to avoid wildcard swallowing
+		r.Get("/files/{fileID}/download", downloadHandler.Download)
+
+		// Folder listing wildcard — must come after the download route
+		r.Get("/files/{folderID}", filesHandler.ListFolder)
+
+		// Upload
+		r.Post("/api/upload/init", uploadHandler.InitUpload)
+		r.Post("/api/upload/confirm/{fileID}", uploadHandler.ConfirmUpload)
+
+		// Admin
+		r.Route("/admin", func(r chi.Router) {
+			r.Get("/users", adminHandler.ListUsers)
+			r.Post("/users", adminHandler.CreateUser)
+			r.Patch("/users/{userID}", adminHandler.UpdateUser)
+		})
 	})
 
 	port := os.Getenv("PORT")

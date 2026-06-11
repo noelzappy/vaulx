@@ -6,6 +6,7 @@ import (
 	"github.com/brifafrica/vaulx/internal/auth"
 	"github.com/brifafrica/vaulx/internal/db"
 	"github.com/brifafrica/vaulx/internal/viewmodel"
+	"github.com/brifafrica/vaulx/web/templates"
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -26,15 +27,21 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := h.queries.ListUsers(r.Context())
+	users, err := h.queries.ListUsers(r.Context())
 	if err != nil {
 		http.Error(w, "failed to list users", http.StatusInternalServerError)
 		return
 	}
 
+	userViews := make([]viewmodel.UserView, 0, len(users))
+	for _, u := range users {
+		userViews = append(userViews, viewmodel.UserFromDB(u))
+	}
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	// Template render added in Task 10 after AdminUsersPage template is generated
+	_ = templates.AdminUsersPage(userViews, viewmodel.UserView{
+		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
+	}).Render(r.Context(), w)
 }
 
 // POST /admin/users
