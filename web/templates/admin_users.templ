@@ -92,10 +92,10 @@ templ userRow(u viewmodel.UserView) {
 			<div style="display:flex;gap:6px;">
 				<select
 					class="input"
+					name="role"
 					style="width:auto;padding:4px 8px;font-size:12px;"
 					hx-patch={ "/admin/users/" + u.ID }
 					hx-trigger="change"
-					hx-vals={ `{"active":"` + u.Active + `"}` }
 					hx-target="closest tr"
 					hx-swap="outerHTML"
 				>
@@ -107,7 +107,7 @@ templ userRow(u viewmodel.UserView) {
 					<button
 						class="card-btn card-btn-danger"
 						hx-patch={ "/admin/users/" + u.ID }
-						hx-vals={ `{"active":"false"}` }
+						hx-vals='{"active":"false"}'
 						hx-confirm={ "Deactivate " + u.Name + "?" }
 						hx-target="closest tr"
 						hx-swap="outerHTML"
@@ -116,7 +116,7 @@ templ userRow(u viewmodel.UserView) {
 					<button
 						class="card-btn"
 						hx-patch={ "/admin/users/" + u.ID }
-						hx-vals={ `{"active":"true"}` }
+						hx-vals='{"active":"true"}'
 						hx-target="closest tr"
 						hx-swap="outerHTML"
 					>Activate</button>
