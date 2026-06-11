@@ -45,3 +45,127 @@ func (q *Queries) CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) 
 	)
 	return i, err
 }
+
+const listAuditLogByAction = `-- name: ListAuditLogByAction :many
+SELECT
+  al.id,
+  al.user_id,
+  al.action,
+  al.resource_type,
+  al.resource_id,
+  al.meta,
+  al.created_at,
+  u.name  AS actor_name,
+  u.email AS actor_email
+FROM audit_log al
+LEFT JOIN users u ON u.id = al.user_id
+WHERE al.action = $1
+ORDER BY al.created_at DESC
+LIMIT $2
+`
+
+type ListAuditLogByActionParams struct {
+	Action string `json:"action"`
+	Limit  int32  `json:"limit"`
+}
+
+type ListAuditLogByActionRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Action       string             `json:"action"`
+	ResourceType *string            `json:"resource_type"`
+	ResourceID   pgtype.UUID        `json:"resource_id"`
+	Meta         []byte             `json:"meta"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ActorName    *string            `json:"actor_name"`
+	ActorEmail   *string            `json:"actor_email"`
+}
+
+func (q *Queries) ListAuditLogByAction(ctx context.Context, arg ListAuditLogByActionParams) ([]ListAuditLogByActionRow, error) {
+	rows, err := q.db.Query(ctx, listAuditLogByAction, arg.Action, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAuditLogByActionRow
+	for rows.Next() {
+		var i ListAuditLogByActionRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Action,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Meta,
+			&i.CreatedAt,
+			&i.ActorName,
+			&i.ActorEmail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listRecentAuditLog = `-- name: ListRecentAuditLog :many
+SELECT
+  al.id,
+  al.user_id,
+  al.action,
+  al.resource_type,
+  al.resource_id,
+  al.meta,
+  al.created_at,
+  u.name  AS actor_name,
+  u.email AS actor_email
+FROM audit_log al
+LEFT JOIN users u ON u.id = al.user_id
+ORDER BY al.created_at DESC
+LIMIT $1
+`
+
+type ListRecentAuditLogRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Action       string             `json:"action"`
+	ResourceType *string            `json:"resource_type"`
+	ResourceID   pgtype.UUID        `json:"resource_id"`
+	Meta         []byte             `json:"meta"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ActorName    *string            `json:"actor_name"`
+	ActorEmail   *string            `json:"actor_email"`
+}
+
+func (q *Queries) ListRecentAuditLog(ctx context.Context, limit int32) ([]ListRecentAuditLogRow, error) {
+	rows, err := q.db.Query(ctx, listRecentAuditLog, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListRecentAuditLogRow
+	for rows.Next() {
+		var i ListRecentAuditLogRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Action,
+			&i.ResourceType,
+			&i.ResourceID,
+			&i.Meta,
+			&i.CreatedAt,
+			&i.ActorName,
+			&i.ActorEmail,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
