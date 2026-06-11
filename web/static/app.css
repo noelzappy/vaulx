@@ -209,3 +209,10 @@ button{cursor:pointer;font:inherit}
   max-width: 148px;
 }
 
+/* ── Inline File Rename ── */
+.file-rename-input {
+  padding: 5px 8px;
+  font-size: 12.5px;
+  max-width: 160px;
+}
+

@@ -165,7 +165,10 @@ func FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView)
 					return templ_7745c5c3_Err
 				}
 				for _, file := range data.Files {
-					templ_7745c5c3_Err = FileCard(file, user.Role == "admin" || (user.Role == "editor" && file.UploaderID == user.ID)).Render(ctx, templ_7745c5c3_Buffer)
+					templ_7745c5c3_Err = FileCard(file,
+						user.Role == "admin" || (user.Role == "editor" && file.UploaderID == user.ID),
+						user.Role == "admin",
+					).Render(ctx, templ_7745c5c3_Buffer)
 					if templ_7745c5c3_Err != nil {
 						return templ_7745c5c3_Err
 					}
@@ -218,7 +221,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var6 string
 				templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 91, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 94, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 				if templ_7745c5c3_Err != nil {
@@ -236,7 +239,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var7 templ.SafeURL
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(crumb.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 94, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 97, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -249,7 +252,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var8 string
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.URL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 95, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 98, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -262,7 +265,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.URL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 98, Col: 28}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 101, Col: 28}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -275,7 +278,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 99, Col: 17}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 102, Col: 17}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {

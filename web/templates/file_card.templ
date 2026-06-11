@@ -2,9 +2,14 @@ package templates
 
 import "github.com/brifafrica/vaulx/internal/viewmodel"
 
-templ FileCard(file viewmodel.FileView, canEdit bool) {
-	<div class="card" title={ file.Name }>
-		<div class="card-actions">
+templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
+	<div
+		class="card"
+		data-file-name={ file.Name }
+		x-data="{ editing: false }"
+		title={ file.Name }
+	>
+		<div class="card-actions" x-show="!editing" onclick="event.stopPropagation()">
 			<a
 				class="card-btn"
 				href={ templ.SafeURL("/files/" + file.ID + "/download") }
@@ -17,25 +22,65 @@ templ FileCard(file viewmodel.FileView, canEdit bool) {
 			>Share</button>
 			if canEdit {
 				<button
+					class="card-btn"
+					x-on:click.stop="editing = true; $nextTick(() => $refs.fileRenameInput.focus())"
+				>Rename</button>
+				<button
 					class="card-btn card-btn-danger"
 					hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
-					hx-confirm={ "Delete \"" + file.Name + "\"? This cannot be undone." }
+					hx-confirm={ "Delete \"" + file.Name + "\"? The file will be hidden but can be recovered by an admin." }
 					hx-target="closest .card"
 					hx-swap="outerHTML swap:0.3s"
 					onclick="event.stopPropagation()"
 				>Delete</button>
 			}
+			if canHardDelete {
+				<button
+					class="card-btn card-btn-danger"
+					hx-delete={ string(templ.SafeURL("/files/" + file.ID + "?permanent=true")) }
+					hx-confirm={ "Permanently delete \"" + file.Name + "\"? This CANNOT be undone — the file will be removed from storage." }
+					hx-target="closest .card"
+					hx-swap="outerHTML swap:0.3s"
+					onclick="event.stopPropagation()"
+				>Delete Permanently</button>
+			}
 		</div>
-		<div class="card-icon">
+		<div class="card-icon" x-show="!editing">
 			@fileTypeIcon(file.MimeType)
 		</div>
-		<div class="card-name">{ file.Name }</div>
-		<div class="card-meta">
+		<div class="card-name" x-show="!editing">{ file.Name }</div>
+		<div class="card-meta" x-show="!editing">
 			<span>{ file.SizeHuman }</span>
 			<span class="card-meta-sep">·</span>
 			<span>{ file.UploaderName }</span>
 			<span class="card-meta-sep">·</span>
 			<span>{ file.RelativeDate }</span>
+		</div>
+		<div x-show="editing" onclick="event.stopPropagation()" style="padding-top:4px;">
+			<form
+				hx-patch={ string(templ.SafeURL("/files/" + file.ID + "/name")) }
+				hx-target="closest .card"
+				hx-swap="outerHTML"
+				style="display:flex;gap:6px;align-items:center;"
+			>
+				<input
+					class="input file-rename-input"
+					name="name"
+					x-ref="fileRenameInput"
+					x-bind:value="$el.closest('.card').dataset.fileName"
+					x-on:keydown.escape.prevent="editing = false"
+					placeholder="File name"
+					required
+					onclick="event.stopPropagation()"
+				/>
+				<button class="btn btn-primary" type="submit" style="padding:5px 10px;font-size:12px;" onclick="event.stopPropagation()">Save</button>
+				<button
+					class="btn btn-ghost"
+					type="button"
+					style="padding:5px 10px;font-size:12px;"
+					x-on:click.stop="editing = false"
+				>Cancel</button>
+			</form>
 		</div>
 	</div>
 }

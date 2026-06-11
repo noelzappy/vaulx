@@ -390,10 +390,10 @@ func (h *FilesHandler) RenameFile(w http.ResponseWriter, r *http.Request) {
 	}
 	fv := viewmodel.FileFromDB(updatedFile, uploaderName)
 	canEdit := user.Role == "admin" || (user.Role == "editor" && fv.UploaderID == user.ID)
-	// TODO(Task 6): add canHardDelete bool (user.Role == "admin") once FileCard signature updated
+	canHardDelete := user.Role == "admin"
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File renamed","type":"success"}}`)
-	_ = templates.FileCard(fv, canEdit).Render(r.Context(), w)
+	_ = templates.FileCard(fv, canEdit, canHardDelete).Render(r.Context(), w)
 }
 
 func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, dbFiles []db.File) ([]viewmodel.FolderView, []viewmodel.FileView) {

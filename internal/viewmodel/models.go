@@ -151,6 +151,22 @@ func FolderFromDB(f db.Folder, itemCount int64) FolderView {
 	}
 }
 
+type PermissionView struct {
+	ID           string
+	GranteeName  string
+	GranteeEmail string
+	Level        string
+	CreatedAt    string // "Jan 2, 2006"
+}
+
+type PermissionsPageData struct {
+	ResourceType string // "file" or "folder"
+	ResourceID   string
+	ResourceName string
+	Permissions  []PermissionView
+	Users        []UserView // all active users for the grant dropdown
+}
+
 // UUIDFromString parses a UUID string into a pgtype.UUID.
 func UUIDFromString(s string) (pgtype.UUID, error) {
 	var u pgtype.UUID
