@@ -20,7 +20,7 @@ type UploadHandler struct {
 	queries db.Querier
 }
 
-func NewUploadHandler(q db.Querier, _ interface{}) *UploadHandler {
+func NewUploadHandler(q db.Querier) *UploadHandler {
 	return &UploadHandler{queries: q}
 }
 
@@ -107,7 +107,11 @@ func (h *UploadHandler) InitUpload(w http.ResponseWriter, r *http.Request) {
 // POST /api/upload/confirm/{fileID}
 // Marks the file as active after the browser has finished the S3 PUT.
 func (h *UploadHandler) ConfirmUpload(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.GetCurrentUser(r.Context())
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
 
 	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
 	if err != nil {
@@ -118,6 +122,12 @@ func (h *UploadHandler) ConfirmUpload(w http.ResponseWriter, r *http.Request) {
 	file, err := h.queries.ActivateFile(r.Context(), fileUUID)
 	if err != nil {
 		http.Error(w, "file not found or already active", http.StatusNotFound)
+		return
+	}
+
+	// Only the uploader or an admin can confirm their own upload
+	if user.Role != "admin" && file.UploadedBy.String() != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
 

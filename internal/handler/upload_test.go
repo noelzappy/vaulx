@@ -11,7 +11,7 @@ import (
 )
 
 func TestInitUpload_ViewerForbidden(t *testing.T) {
-	h := handler.NewUploadHandler(nil, nil)
+	h := handler.NewUploadHandler(nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/upload/init",
 		strings.NewReader(`{"name":"video.mp4","size":1024,"mime_type":"video/mp4"}`))
@@ -28,7 +28,7 @@ func TestInitUpload_ViewerForbidden(t *testing.T) {
 }
 
 func TestInitUpload_MissingName(t *testing.T) {
-	h := handler.NewUploadHandler(nil, nil)
+	h := handler.NewUploadHandler(nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/upload/init",
 		strings.NewReader(`{"size":1024}`))
@@ -45,7 +45,7 @@ func TestInitUpload_MissingName(t *testing.T) {
 }
 
 func TestConfirmUpload_BadUUID(t *testing.T) {
-	h := handler.NewUploadHandler(nil, nil)
+	h := handler.NewUploadHandler(nil)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/upload/confirm/not-a-uuid", nil)
 	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor"})

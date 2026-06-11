@@ -55,7 +55,7 @@ func main() {
 
 	authHandler    := handler.NewAuthHandler(queries, sessionStore)
 	filesHandler   := handler.NewFilesHandler(queries)
-	uploadHandler  := handler.NewUploadHandler(queries, nil)
+	uploadHandler  := handler.NewUploadHandler(queries)
 	downloadHandler := handler.NewDownloadHandler(queries)
 	adminHandler   := handler.NewAdminHandler(queries)
 
