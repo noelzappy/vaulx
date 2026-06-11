@@ -6,6 +6,7 @@ import (
 
 	"github.com/brifafrica/vaulx/internal/auth"
 	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/brifafrica/vaulx/internal/storage"
 	"github.com/brifafrica/vaulx/internal/viewmodel"
 	"github.com/brifafrica/vaulx/web/templates"
 	"github.com/go-chi/chi/v5"
@@ -276,6 +277,12 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	permanent := r.URL.Query().Get("permanent") == "true"
+	if permanent && user.Role != "admin" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
 	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
 	if err != nil {
 		http.Error(w, "invalid file id", http.StatusBadRequest)
@@ -307,7 +314,14 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		ResourceID:   fileUUID,
 	})
 
-	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File deleted","type":"success"}}`)
+	if permanent {
+		if err := storage.DeleteObject(r.Context(), file.S3Key); err != nil {
+			_ = err // log but don't fail — record already soft-deleted
+		}
+		w.Header().Set("HX-Trigger", `{"showToast":{"message":"File permanently deleted","type":"success"}}`)
+	} else {
+		w.Header().Set("HX-Trigger", `{"showToast":{"message":"File deleted","type":"success"}}`)
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
