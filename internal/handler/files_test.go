@@ -26,3 +26,35 @@ func TestDeleteFile_HardDelete_NonAdminForbidden(t *testing.T) {
 		}
 	}
 }
+
+func TestRenameFile_ViewerForbidden(t *testing.T) {
+	h := handler.NewFilesHandler(nil)
+
+	req := httptest.NewRequest(http.MethodPatch, "/files/some-id/name", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "viewer"})
+	ctx = withChiParam(ctx, "fileID", "some-id")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.RenameFile(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rr.Code)
+	}
+}
+
+func TestRenameFile_BadUUID(t *testing.T) {
+	h := handler.NewFilesHandler(nil)
+
+	req := httptest.NewRequest(http.MethodPatch, "/files/not-a-uuid/name", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor"})
+	ctx = withChiParam(ctx, "fileID", "not-a-uuid")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.RenameFile(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}

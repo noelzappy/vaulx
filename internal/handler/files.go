@@ -325,6 +325,77 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// PATCH /files/{fileID}/name
+// Admin can rename any active file. Editor can only rename files they uploaded.
+// Returns the updated FileCard partial.
+func (h *FilesHandler) RenameFile(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	if !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if user.Role != "admin" && (!file.UploadedBy.Valid || file.UploadedBy.String() != user.ID) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+	newName := r.FormValue("name")
+	if newName == "" {
+		http.Error(w, "name is required", http.StatusBadRequest)
+		return
+	}
+
+	updatedFile, err := h.queries.UpdateFileName(r.Context(), db.UpdateFileNameParams{
+		Name: newName,
+		ID:   fileUUID,
+	})
+	if err != nil {
+		http.Error(w, "failed to rename file", http.StatusInternalServerError)
+		return
+	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "file"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "file.rename",
+		ResourceType: &resourceType,
+		ResourceID:   fileUUID,
+	})
+
+	uploaderName := ""
+	if u, err := h.queries.GetUserByID(r.Context(), updatedFile.UploadedBy); err == nil {
+		uploaderName = u.Name
+	}
+	fv := viewmodel.FileFromDB(updatedFile, uploaderName)
+	canEdit := user.Role == "admin" || (user.Role == "editor" && fv.UploaderID == user.ID)
+	// TODO(Task 6): add canHardDelete bool (user.Role == "admin") once FileCard signature updated
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File renamed","type":"success"}}`)
+	_ = templates.FileCard(fv, canEdit).Render(r.Context(), w)
+}
+
 func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, dbFiles []db.File) ([]viewmodel.FolderView, []viewmodel.FileView) {
 	folders := make([]viewmodel.FolderView, 0, len(dbFolders))
 	for _, f := range dbFolders {
