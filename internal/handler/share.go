@@ -117,13 +117,12 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = h.queries.IncrementShareViewCount(r.Context(), share.ID)
-
 	downloadURL, err := storage.PresignGET(r.Context(), file.S3Key)
 	if err != nil {
 		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
 		return
 	}
 
+	_ = h.queries.IncrementShareViewCount(r.Context(), share.ID)
 	http.Redirect(w, r, downloadURL, http.StatusFound)
 }
