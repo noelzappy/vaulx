@@ -55,6 +55,30 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deactivateUser = `-- name: DeactivateUser :one
+UPDATE users SET active = $1 WHERE id = $2 RETURNING id, email, name, role, password_hash, active, created_at
+`
+
+type DeactivateUserParams struct {
+	Active bool        `json:"active"`
+	ID     pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) DeactivateUser(ctx context.Context, arg DeactivateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, deactivateUser, arg.Active, arg.ID)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.Role,
+		&i.PasswordHash,
+		&i.Active,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, name, role, password_hash, active, created_at FROM users
 WHERE email = $1 AND active = true
@@ -82,6 +106,62 @@ SELECT id, email, name, role, password_hash, active, created_at FROM users WHERE
 
 func (q *Queries) GetUserByID(ctx context.Context, id pgtype.UUID) (User, error) {
 	row := q.db.QueryRow(ctx, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Name,
+		&i.Role,
+		&i.PasswordHash,
+		&i.Active,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const listUsers = `-- name: ListUsers :many
+SELECT id, email, name, role, password_hash, active, created_at FROM users ORDER BY created_at DESC
+`
+
+func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []User
+	for rows.Next() {
+		var i User
+		if err := rows.Scan(
+			&i.ID,
+			&i.Email,
+			&i.Name,
+			&i.Role,
+			&i.PasswordHash,
+			&i.Active,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateUserRole = `-- name: UpdateUserRole :one
+UPDATE users SET role = $1 WHERE id = $2 RETURNING id, email, name, role, password_hash, active, created_at
+`
+
+type UpdateUserRoleParams struct {
+	Role string      `json:"role"`
+	ID   pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUserRole, arg.Role, arg.ID)
 	var i User
 	err := row.Scan(
 		&i.ID,

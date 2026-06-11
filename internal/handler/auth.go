@@ -10,11 +10,11 @@ import (
 )
 
 type AuthHandler struct {
-	queries *db.Queries
+	queries db.Querier
 	store   sessions.Store
 }
 
-func NewAuthHandler(q *db.Queries, s sessions.Store) *AuthHandler {
+func NewAuthHandler(q db.Querier, s sessions.Store) *AuthHandler {
 	return &AuthHandler{queries: q, store: s}
 }
 

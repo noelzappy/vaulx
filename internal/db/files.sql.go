@@ -11,6 +11,68 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const activateFile = `-- name: ActivateFile :one
+UPDATE files SET status = 'active'
+WHERE id = $1 AND status = 'pending'
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+`
+
+func (q *Queries) ActivateFile(ctx context.Context, id pgtype.UUID) (File, error) {
+	row := q.db.QueryRow(ctx, activateFile, id)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.Name,
+		&i.S3Key,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const createFile = `-- name: CreateFile :one
+INSERT INTO files (folder_id, name, s3_key, size_bytes, mime_type, uploaded_by)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+`
+
+type CreateFileParams struct {
+	FolderID   pgtype.UUID `json:"folder_id"`
+	Name       string      `json:"name"`
+	S3Key      string      `json:"s3_key"`
+	SizeBytes  int64       `json:"size_bytes"`
+	MimeType   *string     `json:"mime_type"`
+	UploadedBy pgtype.UUID `json:"uploaded_by"`
+}
+
+func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, error) {
+	row := q.db.QueryRow(ctx, createFile,
+		arg.FolderID,
+		arg.Name,
+		arg.S3Key,
+		arg.SizeBytes,
+		arg.MimeType,
+		arg.UploadedBy,
+	)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.Name,
+		&i.S3Key,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getFile = `-- name: GetFile :one
 SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files WHERE id = $1
 `
@@ -187,4 +249,13 @@ func (q *Queries) ListRootFilesForUser(ctx context.Context, userID pgtype.UUID) 
 		return nil, err
 	}
 	return items, nil
+}
+
+const softDeleteFile = `-- name: SoftDeleteFile :exec
+UPDATE files SET status = 'deleted' WHERE id = $1
+`
+
+func (q *Queries) SoftDeleteFile(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteFile, id)
+	return err
 }

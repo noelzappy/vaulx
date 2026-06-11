@@ -11,7 +11,7 @@ import (
 
 // AdminUser inserts a seed admin user when the users table is empty.
 // Logs credentials to stdout only on first run; never on subsequent runs.
-func AdminUser(ctx context.Context, queries *db.Queries) {
+func AdminUser(ctx context.Context, queries db.Querier) {
 	count, err := queries.CountUsers(ctx)
 	if err != nil {
 		log.Printf("seed: count users: %v", err)

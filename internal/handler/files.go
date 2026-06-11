@@ -12,10 +12,10 @@ import (
 )
 
 type FilesHandler struct {
-	queries *db.Queries
+	queries db.Querier
 }
 
-func NewFilesHandler(q *db.Queries) *FilesHandler {
+func NewFilesHandler(q db.Querier) *FilesHandler {
 	return &FilesHandler{queries: q}
 }
 

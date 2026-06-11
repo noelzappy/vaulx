@@ -28,3 +28,16 @@ ORDER BY f.name ASC;
 
 -- name: GetFile :one
 SELECT * FROM files WHERE id = $1;
+
+-- name: CreateFile :one
+INSERT INTO files (folder_id, name, s3_key, size_bytes, mime_type, uploaded_by)
+VALUES ($1, $2, $3, $4, $5, $6)
+RETURNING *;
+
+-- name: ActivateFile :one
+UPDATE files SET status = 'active'
+WHERE id = $1 AND status = 'pending'
+RETURNING *;
+
+-- name: SoftDeleteFile :exec
+UPDATE files SET status = 'deleted' WHERE id = $1;
