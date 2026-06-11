@@ -20,8 +20,8 @@ func NewAdminHandler(q db.Querier) *AdminHandler {
 
 // GET /admin/users
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.GetCurrentUser(r.Context())
-	if user.Role != "admin" {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -39,8 +39,8 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 
 // POST /admin/users
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.GetCurrentUser(r.Context())
-	if user.Role != "admin" {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
@@ -76,14 +76,13 @@ func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("HX-Trigger", `{"showToast":{"message":"User created","type":"success"}}`)
 	http.Redirect(w, r, "/admin/users", http.StatusFound)
 }
 
 // PATCH /admin/users/{userID}
 func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.GetCurrentUser(r.Context())
-	if user.Role != "admin" {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
