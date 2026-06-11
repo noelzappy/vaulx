@@ -239,10 +239,11 @@ func (h *FilesHandler) RenameFolder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = h.queries.UpdateFolderName(r.Context(), db.UpdateFolderNameParams{
+	updatedFolder, err := h.queries.UpdateFolderName(r.Context(), db.UpdateFolderNameParams{
 		Name: newName,
 		ID:   folderUUID,
-	}); err != nil {
+	})
+	if err != nil {
 		http.Error(w, "failed to rename folder", http.StatusInternalServerError)
 		return
 	}
@@ -256,8 +257,11 @@ func (h *FilesHandler) RenameFolder(w http.ResponseWriter, r *http.Request) {
 		ResourceID:   folderUUID,
 	})
 
+	count, _ := h.queries.CountFolderItems(r.Context(), updatedFolder.ID)
+	fv := viewmodel.FolderFromDB(updatedFolder, count)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"Folder renamed","type":"success"}}`)
-	w.WriteHeader(http.StatusOK)
+	_ = templates.FolderCard(fv).Render(r.Context(), w)
 }
 
 // DELETE /files/{fileID}

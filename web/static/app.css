@@ -202,3 +202,10 @@ button{cursor:pointer;font:inherit}
 .badge-viewer { background: rgba(139,148,158,0.1); color: var(--text-muted); }
 .badge-inactive { background: rgba(248,81,73,0.1); color: var(--danger); }
 
+/* ── Inline Folder Rename ── */
+.folder-rename-input {
+  padding: 5px 8px;
+  font-size: 12.5px;
+  max-width: 148px;
+}
+
