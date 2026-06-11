@@ -4,7 +4,8 @@ templ UploadZone(folderID string) {
 	<div
 		id="upload-zone"
 		style="display:none;margin-bottom:20px;"
-		x-data={ "uploadZoneData('" + folderID + "')" }
+		data-folder-id={ folderID }
+		x-data="uploadZoneData()"
 	>
 		<div
 			class="upload-drop-area"
@@ -43,48 +44,53 @@ templ UploadZone(folderID string) {
 		</div>
 	</div>
 	<script>
-		function uploadZoneData(folderID) {
-			return {
-				dragging: false,
-				uploads: [],
-				async handleFiles(fileList) {
-					const files = Array.from(fileList)
-					for (const f of files) {
-						const entry = { name: f.name, progress: 0, done: false, error: false }
-						this.uploads.push(entry)
-						const idx = this.uploads.length - 1
-						try {
-							const initRes = await fetch('/api/upload/init', {
-								method: 'POST',
-								headers: { 'Content-Type': 'application/json' },
-								body: JSON.stringify({ name: f.name, size: f.size, mime_type: f.type || 'application/octet-stream', folder_id: folderID })
-							})
-							if (!initRes.ok) throw new Error('init failed')
-							const { file_id, upload_url } = await initRes.json()
+		if (!window.uploadZoneData) {
+			window.uploadZoneData = function() {
+				return {
+					folderID: document.getElementById('upload-zone')?.dataset.folderId || '',
+					dragging: false,
+					uploads: [],
+					async handleFiles(fileList) {
+						const batchStart = this.uploads.length
+						const files = Array.from(fileList)
+						for (const f of files) {
+							const entry = { name: f.name, progress: 0, done: false, error: false }
+							this.uploads.push(entry)
+							const idx = this.uploads.length - 1
+							try {
+								const initRes = await fetch('/api/upload/init', {
+									method: 'POST',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({ name: f.name, size: f.size, mime_type: f.type || 'application/octet-stream', folder_id: this.folderID })
+								})
+								if (!initRes.ok) throw new Error('init failed')
+								const { file_id, upload_url } = await initRes.json()
 
-							await new Promise((resolve, reject) => {
-								const xhr = new XMLHttpRequest()
-								xhr.upload.onprogress = e => {
-									if (e.lengthComputable) this.uploads[idx].progress = Math.round(e.loaded / e.total * 100)
-								}
-								xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error('upload failed'))
-								xhr.onerror = reject
-								xhr.open('PUT', upload_url)
-								xhr.setRequestHeader('Content-Type', f.type || 'application/octet-stream')
-								xhr.send(f)
-							})
+								await new Promise((resolve, reject) => {
+									const xhr = new XMLHttpRequest()
+									xhr.upload.onprogress = e => {
+										if (e.lengthComputable) this.uploads[idx].progress = Math.round(e.loaded / e.total * 100)
+									}
+									xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error('upload failed'))
+									xhr.onerror = reject
+									xhr.open('PUT', upload_url)
+									xhr.setRequestHeader('Content-Type', f.type || 'application/octet-stream')
+									xhr.send(f)
+								})
 
-							await fetch('/api/upload/confirm/' + file_id, { method: 'POST' })
-							this.uploads[idx].progress = 100
-							this.uploads[idx].done = true
-						} catch (e) {
-							this.uploads[idx].error = true
+								await fetch('/api/upload/confirm/' + file_id, { method: 'POST' })
+								this.uploads[idx].progress = 100
+								this.uploads[idx].done = true
+							} catch (e) {
+								this.uploads[idx].error = true
+							}
 						}
-					}
-					// Refresh file browser after all uploads complete
-					if (this.uploads.some(u => u.done)) {
-						const target = window.location.pathname
-						htmx.ajax('GET', target, { target: '#browser-content', swap: 'outerHTML' })
+						// Refresh file browser if any uploads in this batch succeeded
+						const currentBatch = this.uploads.slice(batchStart)
+						if (currentBatch.some(u => u.done)) {
+							const target = window.location.pathname
+							htmx.ajax('GET', target, { target: '#browser-content', swap: 'outerHTML' })
+						}
 					}
 				}
 			}
