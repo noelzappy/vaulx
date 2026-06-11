@@ -259,3 +259,29 @@ func (q *Queries) SoftDeleteFile(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, softDeleteFile, id)
 	return err
 }
+
+const updateFileName = `-- name: UpdateFileName :one
+UPDATE files SET name = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+`
+
+type UpdateFileNameParams struct {
+	Name string      `json:"name"`
+	ID   pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error) {
+	row := q.db.QueryRow(ctx, updateFileName, arg.Name, arg.ID)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.Name,
+		&i.S3Key,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}

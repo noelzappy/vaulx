@@ -47,6 +47,32 @@ func (q *Queries) CreateShare(ctx context.Context, arg CreateShareParams) (Share
 	return i, err
 }
 
+const getActiveShareByFileID = `-- name: GetActiveShareByFileID :one
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares
+WHERE file_id = $1
+  AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID) (Share, error) {
+	row := q.db.QueryRow(ctx, getActiveShareByFileID, fileID)
+	var i Share
+	err := row.Scan(
+		&i.ID,
+		&i.FileID,
+		&i.Slug,
+		&i.ShareType,
+		&i.PasswordHash,
+		&i.ExpiresAt,
+		&i.MaxViews,
+		&i.ViewCount,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getShareBySlug = `-- name: GetShareBySlug :one
 SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares WHERE slug = $1
 `
