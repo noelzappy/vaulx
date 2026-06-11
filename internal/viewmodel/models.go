@@ -157,3 +157,53 @@ func UUIDFromString(s string) (pgtype.UUID, error) {
 	err := u.Scan(s)
 	return u, err
 }
+
+type AuditLogView struct {
+	ID           string
+	ActorName    string
+	ActorEmail   string
+	Action       string
+	ResourceType string
+	ResourceID   string
+	CreatedAt    string // formatted: "Jan 2, 2006 15:04"
+}
+
+func AuditLogViewFromRow(
+	id pgtype.UUID,
+	action string,
+	resourceType *string,
+	resourceID pgtype.UUID,
+	createdAt pgtype.Timestamptz,
+	actorName *string,
+	actorEmail *string,
+) AuditLogView {
+	rt := ""
+	if resourceType != nil {
+		rt = *resourceType
+	}
+	name := ""
+	if actorName != nil {
+		name = *actorName
+	}
+	email := ""
+	if actorEmail != nil {
+		email = *actorEmail
+	}
+	rid := ""
+	if resourceID.Valid {
+		rid = resourceID.String()
+	}
+	ts := ""
+	if createdAt.Valid {
+		ts = createdAt.Time.Format("Jan 2, 2006 15:04")
+	}
+	return AuditLogView{
+		ID:           id.String(),
+		ActorName:    name,
+		ActorEmail:   email,
+		Action:       action,
+		ResourceType: rt,
+		ResourceID:   rid,
+		CreatedAt:    ts,
+	}
+}
