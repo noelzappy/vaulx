@@ -1,0 +1,93 @@
+package templates
+
+templ UploadZone(folderID string) {
+	<div
+		id="upload-zone"
+		style="display:none;margin-bottom:20px;"
+		x-data={ "uploadZoneData('" + folderID + "')" }
+	>
+		<div
+			class="upload-drop-area"
+			:class="{ 'upload-drop-active': dragging }"
+			x-on:dragover.prevent="dragging = true"
+			x-on:dragleave.prevent="dragging = false"
+			x-on:drop.prevent="dragging = false; handleFiles($event.dataTransfer.files)"
+			x-on:click="$refs.fileInput.click()"
+		>
+			<input
+				type="file"
+				multiple
+				style="display:none"
+				x-ref="fileInput"
+				x-on:change="handleFiles($event.target.files)"
+			/>
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:28px;height:28px;margin-bottom:8px;opacity:0.5;">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"></path>
+			</svg>
+			<p style="font-size:13px;color:var(--text-muted);">
+				Drop files here or <span style="color:var(--accent);cursor:pointer;">click to browse</span>
+			</p>
+		</div>
+		<div x-show="uploads.length > 0" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;">
+			<template x-for="(u, i) in uploads" :key="i">
+				<div class="upload-progress-row">
+					<span class="upload-filename" x-text="u.name"></span>
+					<div class="upload-progress-bar-track">
+						<div class="upload-progress-bar-fill" :style="'width:' + u.progress + '%'"></div>
+					</div>
+					<span class="upload-progress-pct" x-text="u.progress + '%'"></span>
+					<span x-show="u.done" style="color:var(--success);font-size:12px;">✓</span>
+					<span x-show="u.error" style="color:var(--danger);font-size:12px;">✗</span>
+				</div>
+			</template>
+		</div>
+	</div>
+	<script>
+		function uploadZoneData(folderID) {
+			return {
+				dragging: false,
+				uploads: [],
+				async handleFiles(fileList) {
+					const files = Array.from(fileList)
+					for (const f of files) {
+						const entry = { name: f.name, progress: 0, done: false, error: false }
+						this.uploads.push(entry)
+						const idx = this.uploads.length - 1
+						try {
+							const initRes = await fetch('/api/upload/init', {
+								method: 'POST',
+								headers: { 'Content-Type': 'application/json' },
+								body: JSON.stringify({ name: f.name, size: f.size, mime_type: f.type || 'application/octet-stream', folder_id: folderID })
+							})
+							if (!initRes.ok) throw new Error('init failed')
+							const { file_id, upload_url } = await initRes.json()
+
+							await new Promise((resolve, reject) => {
+								const xhr = new XMLHttpRequest()
+								xhr.upload.onprogress = e => {
+									if (e.lengthComputable) this.uploads[idx].progress = Math.round(e.loaded / e.total * 100)
+								}
+								xhr.onload = () => xhr.status < 300 ? resolve() : reject(new Error('upload failed'))
+								xhr.onerror = reject
+								xhr.open('PUT', upload_url)
+								xhr.setRequestHeader('Content-Type', f.type || 'application/octet-stream')
+								xhr.send(f)
+							})
+
+							await fetch('/api/upload/confirm/' + file_id, { method: 'POST' })
+							this.uploads[idx].progress = 100
+							this.uploads[idx].done = true
+						} catch (e) {
+							this.uploads[idx].error = true
+						}
+					}
+					// Refresh file browser after all uploads complete
+					if (this.uploads.some(u => u.done)) {
+						const target = window.location.pathname
+						htmx.ajax('GET', target, { target: '#browser-content', swap: 'outerHTML' })
+					}
+				}
+			}
+		}
+	</script>
+}
