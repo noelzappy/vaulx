@@ -15,17 +15,31 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 				@Breadcrumb(data.Breadcrumbs)
 			</div>
 			if user.Role == "admin" || user.Role == "editor" {
-				<button
-					class="btn btn-primary"
-					onclick="document.getElementById('new-folder-form').style.display='flex'"
-				>
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
-					</svg>
-					New Folder
-				</button>
+				<div style="display:flex;gap:8px;">
+					<button
+						class="btn btn-ghost"
+						onclick="document.getElementById('new-folder-form').style.display='flex'"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"></path>
+						</svg>
+						New Folder
+					</button>
+					<button
+						class="btn btn-primary"
+						onclick="document.getElementById('upload-zone').style.display='block'"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"></path>
+						</svg>
+						Upload
+					</button>
+				</div>
 			}
 		</div>
+		if user.Role == "admin" || user.Role == "editor" {
+			@UploadZone(data.FolderID)
+		}
 		<form
 			id="new-folder-form"
 			style="display:none;gap:8px;margin-bottom:20px;align-items:center"

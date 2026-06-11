@@ -5,7 +5,11 @@ import "github.com/brifafrica/vaulx/internal/viewmodel"
 templ FileCard(file viewmodel.FileView) {
 	<div class="card" title={ file.Name }>
 		<div class="card-actions">
-			<button class="card-btn" onclick="event.stopPropagation()">Download</button>
+			<a
+				class="card-btn"
+				href={ templ.SafeURL("/files/" + file.ID + "/download") }
+				onclick="event.stopPropagation()"
+			>Download</a>
 			<button class="card-btn" onclick="event.stopPropagation()">Share</button>
 		</div>
 		<div class="card-icon">
