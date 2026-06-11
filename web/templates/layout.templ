@@ -37,6 +37,23 @@ templ Layout(title string, user viewmodel.UserView) {
 					window.dispatchEvent(new CustomEvent("showtoast", { detail: e.detail }));
 				});
 			</script>
+			<script>
+				async function copyShareLink(fileID) {
+					try {
+						const res = await fetch('/files/' + fileID + '/share', { method: 'POST' })
+						if (!res.ok) throw new Error('share failed')
+						const { url } = await res.json()
+						await navigator.clipboard.writeText(window.location.origin + url)
+						window.dispatchEvent(new CustomEvent('showtoast', {
+							detail: { message: 'Share link copied!', type: 'success' }
+						}))
+					} catch (e) {
+						window.dispatchEvent(new CustomEvent('showtoast', {
+							detail: { message: 'Failed to create share link', type: 'error' }
+						}))
+					}
+				}
+			</script>
 		</body>
 	</html>
 }
