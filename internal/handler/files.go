@@ -284,7 +284,7 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Role != "admin" && file.UploadedBy.String() != user.ID {
+	if user.Role != "admin" && (!file.UploadedBy.Valid || file.UploadedBy.String() != user.ID) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}

@@ -18,7 +18,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool) {
 			if canEdit {
 				<button
 					class="card-btn card-btn-danger"
-					hx-delete={ "/files/" + file.ID }
+					hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
 					hx-confirm={ "Delete \"" + file.Name + "\"? This cannot be undone." }
 					hx-target="closest .card"
 					hx-swap="outerHTML swap:0.3s"
