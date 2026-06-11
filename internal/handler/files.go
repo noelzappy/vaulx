@@ -147,7 +147,7 @@ func (h *FilesHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 	parentIDStr := r.FormValue("parent_id")
 	parentUUID, _ := viewmodel.UUIDFromString(parentIDStr)
 
-	_, err = h.queries.CreateFolder(r.Context(), db.CreateFolderParams{
+	newFolder, err := h.queries.CreateFolder(r.Context(), db.CreateFolderParams{
 		Name:     name,
 		ParentID: parentUUID, // zero value = NULL when !Valid
 		OwnerID:  ownerUUID,
@@ -156,6 +156,14 @@ func (h *FilesHandler) CreateFolder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to create folder", http.StatusInternalServerError)
 		return
 	}
+
+	resourceType := "folder"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       ownerUUID,
+		Action:       "folder.create",
+		ResourceType: &resourceType,
+		ResourceID:   newFolder.ID,
+	})
 
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"Folder created","type":"success"}}`)
 	if parentIDStr != "" {
@@ -188,6 +196,15 @@ func (h *FilesHandler) DeleteFolder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to delete folder", http.StatusInternalServerError)
 		return
 	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "folder"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "folder.delete",
+		ResourceType: &resourceType,
+		ResourceID:   folderUUID,
+	})
 
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"Folder deleted","type":"success"}}`)
 	w.WriteHeader(http.StatusOK)
@@ -229,6 +246,15 @@ func (h *FilesHandler) RenameFolder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to rename folder", http.StatusInternalServerError)
 		return
 	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "folder"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "folder.rename",
+		ResourceType: &resourceType,
+		ResourceID:   folderUUID,
+	})
 
 	w.Header().Set("HX-Trigger", `{"showToast":{"message":"Folder renamed","type":"success"}}`)
 	w.WriteHeader(http.StatusOK)

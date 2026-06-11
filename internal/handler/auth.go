@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/brifafrica/vaulx/internal/db"
+	"github.com/brifafrica/vaulx/internal/viewmodel"
 	"github.com/brifafrica/vaulx/web/templates"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -52,6 +53,12 @@ func (h *AuthHandler) LoginPage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to save session", http.StatusInternalServerError)
 		return
 	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID.String())
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID: userUUID,
+		Action: "auth.login",
+	})
 
 	http.Redirect(w, r, "/files", http.StatusFound)
 }
