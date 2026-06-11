@@ -1,8 +1,11 @@
 package templates
 
-import "github.com/noelzappy/vaulx/internal/viewmodel"
+import (
+	"fmt"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
 
-templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, currentUser viewmodel.UserView) {
+templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, pagination *viewmodel.PaginationData, currentUser viewmodel.UserView) {
 	@Layout("Audit Log", currentUser) {
 		<div>
 			<div class="toolbar" style="margin-bottom:24px;">
@@ -65,6 +68,27 @@ templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, curr
 							}
 						</tbody>
 					</table>
+				</div>
+			}
+			if pagination != nil {
+				<div class="pagination-bar" style="margin-top:24px;justify-content:center;display:flex;gap:8px;align-items:center;">
+					if pagination.Page > 1 {
+						<a
+							class="btn btn-ghost"
+							href={ templ.SafeURL(fmt.Sprintf("/admin/audit?page=%d", pagination.Page-1)) }
+						>Previous</a>
+					} else {
+						<span class="btn btn-ghost" style="opacity:.35;cursor:default;">Previous</span>
+					}
+					<span class="pagination-info">Page { fmt.Sprintf("%d", pagination.Page) } of { fmt.Sprintf("%d", pagination.TotalPages) }</span>
+					if pagination.Page < pagination.TotalPages {
+						<a
+							class="btn btn-ghost"
+							href={ templ.SafeURL(fmt.Sprintf("/admin/audit?page=%d", pagination.Page+1)) }
+						>Next</a>
+					} else {
+						<span class="btn btn-ghost" style="opacity:.35;cursor:default;">Next</span>
+					}
 				</div>
 			}
 		</div>

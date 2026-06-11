@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/noelzappy/vaulx/internal/auth"
 	"github.com/noelzappy/vaulx/internal/db"
@@ -153,7 +154,7 @@ func (h *AdminHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// GET /admin/audit?action=<optional>
+// GET /admin/audit?action=<optional>&page=<optional>
 func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())
 	if !ok || user.Role != "admin" {
@@ -167,7 +168,16 @@ func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 
 	actionFilter := r.URL.Query().Get("action")
 
+	page := 1
+	limit := 50
+	if p := r.URL.Query().Get("page"); p != "" {
+		if n, err := strconv.Atoi(p); err == nil && n > 0 {
+			page = n
+		}
+	}
+
 	var entries []viewmodel.AuditLogView
+	var pagination *viewmodel.PaginationData
 
 	if actionFilter != "" {
 		rows, err := h.queries.ListAuditLogByAction(r.Context(), db.ListAuditLogByActionParams{
@@ -185,7 +195,11 @@ func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 			))
 		}
 	} else {
-		rows, err := h.queries.ListRecentAuditLog(r.Context(), 100)
+		offset := int32((page - 1) * limit)
+		rows, err := h.queries.ListAuditLogPage(r.Context(), db.ListAuditLogPageParams{
+			Limit:  int32(limit),
+			Offset: offset,
+		})
 		if err != nil {
 			http.Error(w, "failed to load audit log", http.StatusInternalServerError)
 			return
@@ -196,6 +210,8 @@ func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 				row.CreatedAt, row.ActorName, row.ActorEmail,
 			))
 		}
+		total, _ := h.queries.CountAuditLog(r.Context())
+		pagination = viewmodel.NewPagination(page, limit, total)
 	}
 
 	if entries == nil {
@@ -203,7 +219,7 @@ func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.AdminAuditPage(entries, actionFilter, viewmodel.UserView{
+	_ = templates.AdminAuditPage(entries, actionFilter, pagination, viewmodel.UserView{
 		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
 	}).Render(r.Context(), w)
 }
