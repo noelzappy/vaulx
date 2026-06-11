@@ -59,6 +59,7 @@ func main() {
 	uploadHandler  := handler.NewUploadHandler(queries)
 	downloadHandler := handler.NewDownloadHandler(queries)
 	adminHandler   := handler.NewAdminHandler(queries)
+	shareHandler   := handler.NewShareHandler(queries)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -76,6 +77,9 @@ func main() {
 		http.Redirect(w, r, "/files", http.StatusFound)
 	})
 
+	// Public share route — no auth required
+	r.Get("/s/{slug}", shareHandler.ResolveShare)
+
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
 		r.Get("/files", filesHandler.List)
@@ -89,6 +93,10 @@ func main() {
 		// Folder listing wildcard — must come after the download route
 		r.Get("/files/{folderID}", filesHandler.ListFolder)
 
+		// File operations
+		r.Delete("/files/{fileID}", filesHandler.DeleteFile)
+		r.Post("/files/{fileID}/share", shareHandler.CreateShare)
+
 		// Upload
 		r.Post("/api/upload/init", uploadHandler.InitUpload)
 		r.Post("/api/upload/confirm/{fileID}", uploadHandler.ConfirmUpload)
@@ -98,6 +106,7 @@ func main() {
 			r.Get("/users", adminHandler.ListUsers)
 			r.Post("/users", adminHandler.CreateUser)
 			r.Patch("/users/{userID}", adminHandler.UpdateUser)
+			r.Get("/audit", adminHandler.AuditLog)
 		})
 	})
 
