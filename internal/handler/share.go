@@ -49,6 +49,15 @@ func (h *ShareHandler) CreateShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Return existing active share if one already exists for this file
+	existing, err := h.queries.GetActiveShareByFileID(r.Context(), fileUUID)
+	if err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"url": "/s/" + existing.Slug})
+		return
+	}
+	// err != nil means no active share found — fall through to create a new one
+
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
