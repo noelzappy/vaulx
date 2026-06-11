@@ -241,3 +241,4 @@ button{cursor:pointer;font:inherit}
 .preview-meta-row{display:flex;justify-content:space-between;font-size:12.5px}
 .preview-meta-label{color:var(--text-muted)}
 .preview-actions{padding:16px 20px;display:flex;gap:8px}
+[x-cloak]{display:none!important}

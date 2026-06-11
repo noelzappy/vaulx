@@ -6,7 +6,7 @@ import (
 )
 
 templ FilesPage(data viewmodel.FileBrowserData, user viewmodel.UserView) {
-	@Layout("My Files", user) {
+	@Layout("My Files", user, true) {
 		@FileBrowserContent(data, user)
 	}
 }
@@ -28,20 +28,17 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 						</svg>
 						New Folder
 					</button>
-					<button
-						class="btn btn-primary"
-						onclick="document.getElementById('upload-zone').style.display='block'"
-					>
-						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
-							<path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"></path>
-						</svg>
-						Upload
-					</button>
 				</div>
 			}
 		</div>
 		if user.Role == "admin" || user.Role == "editor" {
-			@UploadZone(data.FolderID)
+			<div id="uppy-container" data-folder-id={ data.FolderID } style="margin-bottom:20px;"></div>
+			<script>
+				(function() {
+					var fid = document.getElementById('uppy-container') && document.getElementById('uppy-container').dataset.folderId || '';
+					if (typeof initUppy === 'function') { initUppy(fid); }
+				})();
+			</script>
 		}
 		<form
 			id="new-folder-form"
@@ -58,13 +55,14 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 			<button class="btn btn-ghost" type="button" onclick="document.getElementById('new-folder-form').style.display='none'">Cancel</button>
 		</form>
 		if len(data.Folders) == 0 && len(data.Files) == 0 {
-			<div class="file-grid">
-				<div class="empty-state">
-					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor">
-						<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"></path>
-					</svg>
-					<p>No files or folders yet</p>
-				</div>
+			<div class="empty-state" style="padding:60px 20px;text-align:center;">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;opacity:.3;margin-bottom:12px;">
+					<path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"></path>
+				</svg>
+				<p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">This folder is empty</p>
+				if user.Role == "admin" || user.Role == "editor" {
+					<p style="font-size:12.5px;color:var(--text-muted);">Upload files or create a folder to get started.</p>
+				}
 			</div>
 		} else {
 			if len(data.Folders) > 0 {

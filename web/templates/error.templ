@@ -28,7 +28,7 @@ templ ErrorPage(code int, title, message string) {
 
 // AuthErrorPage is used on authenticated routes (shows sidebar via Layout).
 templ AuthErrorPage(code int, title, message string, user viewmodel.UserView) {
-	@Layout("Error", user) {
+	@Layout("Error", user, false) {
 		<div class="error-auth">
 			<div class="error-code">{ intToStr(code) }</div>
 			<h1 class="error-title">{ title }</h1>

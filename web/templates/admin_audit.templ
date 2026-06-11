@@ -6,7 +6,7 @@ import (
 )
 
 templ AdminAuditPage(entries []viewmodel.AuditLogView, activeFilter string, pagination *viewmodel.PaginationData, currentUser viewmodel.UserView) {
-	@Layout("Audit Log", currentUser) {
+	@Layout("Audit Log", currentUser, false) {
 		<div>
 			<div class="toolbar" style="margin-bottom:24px;">
 				<h1 style="font-size:18px;font-weight:600;">Audit Log</h1>

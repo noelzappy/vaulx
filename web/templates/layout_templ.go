@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
-func Layout(title string, user viewmodel.UserView) templ.Component {
+func Layout(title string, user viewmodel.UserView, showUpload bool) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -44,7 +44,17 @@ func Layout(title string, user viewmodel.UserView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — Vaulx</title><link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"https://unpkg.com/htmx.org@2.0.3\" integrity=\"sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js\" defer></script></head><body><div class=\"app\" x-data=\"{ toasts: [] }\" x-on:showtoast.window=\"toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " — Vaulx</title><link rel=\"stylesheet\" href=\"/static/app.css\"><script src=\"https://unpkg.com/htmx.org@2.0.3\" integrity=\"sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq\" crossorigin=\"anonymous\"></script><script src=\"https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js\" defer></script>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if showUpload {
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<link href=\"https://releases.transloadit.com/uppy/v3.27.0/uppy.min.css\" rel=\"stylesheet\"><script src=\"https://releases.transloadit.com/uppy/v3.27.0/uppy.min.js\"></script> <script src=\"/static/upload.js\"></script>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+		}
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</head><body><div class=\"app\" x-data=\"{ toasts: [], previewOpen: false }\" x-on:showtoast.window=\"toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -52,7 +62,7 @@ func Layout(title string, user viewmodel.UserView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "<main class=\"main-content\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "<main class=\"main-content\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -60,7 +70,7 @@ func Layout(title string, user viewmodel.UserView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</main><div class=\"toast-container\"><template x-for=\"(t, i) in toasts\" :key=\"i\"><div class=\"toast\" :class=\"'toast-' + (t.type || 'info')\"><span x-text=\"t.message\"></span></div></template></div></div><script>\n\t\t\t\t// Forward HTMX HX-Trigger showToast events into Alpine\n\t\t\t\tdocument.body.addEventListener(\"showToast\", function(e) {\n\t\t\t\t\twindow.dispatchEvent(new CustomEvent(\"showtoast\", { detail: e.detail }));\n\t\t\t\t});\n\t\t\t</script><script>\n\t\t\t\tasync function copyShareLink(fileID) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst res = await fetch('/files/' + fileID + '/share', { method: 'POST' })\n\t\t\t\t\t\tif (!res.ok) throw new Error('share failed')\n\t\t\t\t\t\tconst { url } = await res.json()\n\t\t\t\t\t\tawait navigator.clipboard.writeText(window.location.origin + url)\n\t\t\t\t\t\twindow.dispatchEvent(new CustomEvent('showtoast', {\n\t\t\t\t\t\t\tdetail: { message: 'Share link copied!', type: 'success' }\n\t\t\t\t\t\t}))\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\twindow.dispatchEvent(new CustomEvent('showtoast', {\n\t\t\t\t\t\t\tdetail: { message: 'Failed to create share link', type: 'error' }\n\t\t\t\t\t\t}))\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script></body></html>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "</main><div id=\"preview-panel\" class=\"preview-panel\" x-show=\"previewOpen\" x-cloak @click.outside=\"previewOpen = false\" @keydown.escape.window=\"previewOpen = false\"></div><div class=\"toast-container\"><template x-for=\"(t, i) in toasts\" :key=\"i\"><div class=\"toast\" :class=\"'toast-' + (t.type || 'info')\"><span x-text=\"t.message\"></span></div></template></div></div><script>\n\t\t\t\tdocument.body.addEventListener(\"showToast\", function(e) {\n\t\t\t\t\twindow.dispatchEvent(new CustomEvent(\"showtoast\", { detail: e.detail }));\n\t\t\t\t});\n\t\t\t\tdocument.body.addEventListener(\"htmx:afterSwap\", function(e) {\n\t\t\t\t\tif (e.detail.target && e.detail.target.id === \"preview-panel\") {\n\t\t\t\t\t\tconst app = document.querySelector(\".app\");\n\t\t\t\t\t\tif (app && app.__x) {\n\t\t\t\t\t\t\tapp.__x.$data.previewOpen = true;\n\t\t\t\t\t\t} else if (app && app._x_dataStack) {\n\t\t\t\t\t\t\tAlpine.$data(app).previewOpen = true;\n\t\t\t\t\t\t}\n\t\t\t\t\t}\n\t\t\t\t});\n\t\t\t</script><script>\n\t\t\t\tasync function copyShareLink(fileID) {\n\t\t\t\t\ttry {\n\t\t\t\t\t\tconst res = await fetch('/files/' + fileID + '/share', { method: 'POST' })\n\t\t\t\t\t\tif (!res.ok) throw new Error('share failed')\n\t\t\t\t\t\tconst { url } = await res.json()\n\t\t\t\t\t\tawait navigator.clipboard.writeText(window.location.origin + url)\n\t\t\t\t\t\twindow.dispatchEvent(new CustomEvent('showtoast', {\n\t\t\t\t\t\t\tdetail: { message: 'Share link copied!', type: 'success' }\n\t\t\t\t\t\t}))\n\t\t\t\t\t} catch (e) {\n\t\t\t\t\t\twindow.dispatchEvent(new CustomEvent('showtoast', {\n\t\t\t\t\t\t\tdetail: { message: 'Failed to create share link', type: 'error' }\n\t\t\t\t\t\t}))\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t</script></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

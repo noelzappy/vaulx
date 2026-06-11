@@ -2,7 +2,7 @@ package templates
 
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
-templ Layout(title string, user viewmodel.UserView) {
+templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -12,17 +12,30 @@ templ Layout(title string, user viewmodel.UserView) {
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
 			<script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
+			if showUpload {
+				<link href="https://releases.transloadit.com/uppy/v3.27.0/uppy.min.css" rel="stylesheet"/>
+				<script src="https://releases.transloadit.com/uppy/v3.27.0/uppy.min.js"></script>
+				<script src="/static/upload.js"></script>
+			}
 		</head>
 		<body>
 			<div
 				class="app"
-				x-data="{ toasts: [] }"
+				x-data="{ toasts: [], previewOpen: false }"
 				x-on:showtoast.window="toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)"
 			>
 				@Sidebar(user)
 				<main class="main-content">
 					{ children... }
 				</main>
+				<div
+					id="preview-panel"
+					class="preview-panel"
+					x-show="previewOpen"
+					x-cloak
+					@click.outside="previewOpen = false"
+					@keydown.escape.window="previewOpen = false"
+				></div>
 				<div class="toast-container">
 					<template x-for="(t, i) in toasts" :key="i">
 						<div class="toast" :class="'toast-' + (t.type || 'info')">
@@ -32,9 +45,18 @@ templ Layout(title string, user viewmodel.UserView) {
 				</div>
 			</div>
 			<script>
-				// Forward HTMX HX-Trigger showToast events into Alpine
 				document.body.addEventListener("showToast", function(e) {
 					window.dispatchEvent(new CustomEvent("showtoast", { detail: e.detail }));
+				});
+				document.body.addEventListener("htmx:afterSwap", function(e) {
+					if (e.detail.target && e.detail.target.id === "preview-panel") {
+						const app = document.querySelector(".app");
+						if (app && app.__x) {
+							app.__x.$data.previewOpen = true;
+						} else if (app && app._x_dataStack) {
+							Alpine.$data(app).previewOpen = true;
+						}
+					}
 				});
 			</script>
 			<script>

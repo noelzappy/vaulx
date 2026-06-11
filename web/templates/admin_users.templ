@@ -3,7 +3,7 @@ package templates
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 templ AdminUsersPage(users []viewmodel.UserView, currentUser viewmodel.UserView) {
-	@Layout("Users", currentUser) {
+	@Layout("Users", currentUser, false) {
 		@AdminUsersContent(users)
 	}
 }

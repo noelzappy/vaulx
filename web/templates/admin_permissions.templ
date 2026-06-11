@@ -3,7 +3,7 @@ package templates
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 templ AdminPermissionsPage(data viewmodel.PermissionsPageData, currentUser viewmodel.UserView) {
-	@Layout("Permissions — "+data.ResourceName, currentUser) {
+	@Layout("Permissions — "+data.ResourceName, currentUser, false) {
 		<div>
 			<div class="toolbar" style="margin-bottom:24px;">
 				<div>

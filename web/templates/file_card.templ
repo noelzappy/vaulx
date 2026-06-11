@@ -8,6 +8,10 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		data-file-name={ file.Name }
 		x-data="{ editing: false }"
 		title={ file.Name }
+		hx-get={ string(templ.SafeURL("/api/file/" + file.ID + "/preview")) }
+		hx-target="#preview-panel"
+		hx-swap="innerHTML"
+		hx-trigger="click[!event.target.closest('.card-btn') && !event.target.closest('form') && !event.target.closest('input')]"
 	>
 		<div class="card-actions" x-show="!editing" onclick="event.stopPropagation()">
 			<a
