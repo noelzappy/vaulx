@@ -21,7 +21,11 @@ func NewDownloadHandler(q db.Querier) *DownloadHandler {
 // GET /files/{fileID}/download
 // Generates a presigned S3 GET URL and redirects the browser to it.
 func (h *DownloadHandler) Download(w http.ResponseWriter, r *http.Request) {
-	user, _ := auth.GetCurrentUser(r.Context())
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
 	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
 	if err != nil {
