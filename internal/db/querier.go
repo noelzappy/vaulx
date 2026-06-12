@@ -32,6 +32,7 @@ type Querier interface {
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GrantPermission(ctx context.Context, arg GrantPermissionParams) (Permission, error)
 	IncrementShareViewCount(ctx context.Context, id pgtype.UUID) error
+	ListAllFolders(ctx context.Context) ([]Folder, error)
 	ListAuditLogByAction(ctx context.Context, arg ListAuditLogByActionParams) ([]ListAuditLogByActionRow, error)
 	ListAuditLogPage(ctx context.Context, arg ListAuditLogPageParams) ([]ListAuditLogPageRow, error)
 	ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) ([]File, error)
@@ -46,6 +47,7 @@ type Querier interface {
 	ListRootFolders(ctx context.Context) ([]Folder, error)
 	ListRootFoldersForUser(ctx context.Context, userID pgtype.UUID) ([]Folder, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	MoveFileToFolder(ctx context.Context, arg MoveFileToFolderParams) (File, error)
 	RevokePermission(ctx context.Context, id pgtype.UUID) error
 	SoftDeleteFile(ctx context.Context, id pgtype.UUID) error
 	UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error)

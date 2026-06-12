@@ -38,6 +38,12 @@ DELETE FROM folders WHERE id = $1;
 -- name: UpdateFolderName :one
 UPDATE folders SET name = $1 WHERE id = $2 RETURNING *;
 
+-- name: ListAllFolders :many
+SELECT * FROM folders ORDER BY name ASC;
+
+-- name: MoveFileToFolder :one
+UPDATE files SET folder_id = $1 WHERE id = $2 AND status = 'active' RETURNING *;
+
 -- name: CountFolderItems :one
 SELECT COUNT(*) FROM (
   SELECT id FROM folders WHERE parent_id = $1

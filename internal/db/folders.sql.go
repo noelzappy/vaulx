@@ -77,6 +77,36 @@ func (q *Queries) GetFolder(ctx context.Context, id pgtype.UUID) (Folder, error)
 	return i, err
 }
 
+const listAllFolders = `-- name: ListAllFolders :many
+SELECT id, parent_id, name, owner_id, created_at FROM folders ORDER BY name ASC
+`
+
+func (q *Queries) ListAllFolders(ctx context.Context) ([]Folder, error) {
+	rows, err := q.db.Query(ctx, listAllFolders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Folder
+	for rows.Next() {
+		var i Folder
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Name,
+			&i.OwnerID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFoldersByParent = `-- name: ListFoldersByParent :many
 SELECT id, parent_id, name, owner_id, created_at FROM folders
 WHERE parent_id = $1
@@ -214,6 +244,32 @@ func (q *Queries) ListRootFoldersForUser(ctx context.Context, userID pgtype.UUID
 		return nil, err
 	}
 	return items, nil
+}
+
+const moveFileToFolder = `-- name: MoveFileToFolder :one
+UPDATE files SET folder_id = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+`
+
+type MoveFileToFolderParams struct {
+	FolderID pgtype.UUID `json:"folder_id"`
+	ID       pgtype.UUID `json:"id"`
+}
+
+func (q *Queries) MoveFileToFolder(ctx context.Context, arg MoveFileToFolderParams) (File, error) {
+	row := q.db.QueryRow(ctx, moveFileToFolder, arg.FolderID, arg.ID)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.Name,
+		&i.S3Key,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const updateFolderName = `-- name: UpdateFolderName :one

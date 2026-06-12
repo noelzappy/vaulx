@@ -2,6 +2,7 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"time"
@@ -525,6 +526,91 @@ func (h *FilesHandler) PreviewFile(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = templates.PreviewPanel(file, uploaderName, presignedURL).Render(r.Context(), w)
+}
+
+// GET /api/folders — returns all folders as JSON for the move-to-folder picker.
+func (h *FilesHandler) ListFoldersJSON(w http.ResponseWriter, r *http.Request) {
+	if _, ok := auth.GetCurrentUser(r.Context()); !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	folders, err := h.queries.ListAllFolders(r.Context())
+	if err != nil {
+		http.Error(w, "failed to list folders", http.StatusInternalServerError)
+		return
+	}
+	type row struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	out := make([]row, len(folders))
+	for i, f := range folders {
+		out[i] = row{ID: f.ID.String(), Name: f.Name}
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(out)
+}
+
+// PATCH /files/{fileID}/folder — move a file to a different folder (or root).
+// Body: {"folderId": "<uuid>"} or {"folderId": ""} to move to root.
+func (h *FilesHandler) MoveFile(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	var body struct {
+		FolderID string `json:"folderId"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "invalid body", http.StatusBadRequest)
+		return
+	}
+
+	var folderID pgtype.UUID
+	if body.FolderID != "" {
+		folderID, err = viewmodel.UUIDFromString(body.FolderID)
+		if err != nil {
+			http.Error(w, "invalid folder id", http.StatusBadRequest)
+			return
+		}
+	}
+
+	updatedFile, err := h.queries.MoveFileToFolder(r.Context(), db.MoveFileToFolderParams{
+		FolderID: folderID,
+		ID:       fileUUID,
+	})
+	if err != nil {
+		http.Error(w, "failed to move file", http.StatusInternalServerError)
+		return
+	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "file"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "file.move",
+		ResourceType: &resourceType,
+		ResourceID:   fileUUID,
+	})
+
+	uploaderName := ""
+	if u, err := h.queries.GetUserByID(r.Context(), updatedFile.UploadedBy); err == nil {
+		uploaderName = u.Name
+	}
+	fv := viewmodel.FileFromDB(updatedFile, uploaderName)
+	canEdit := user.Role == "admin" || (user.Role == "editor" && fv.UploaderID == user.ID)
+	canHardDelete := user.Role == "admin"
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File moved","type":"success"}}`)
+	_ = templates.FileCard(fv, canEdit, canHardDelete).Render(r.Context(), w)
 }
 
 func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, dbFiles []db.File) ([]viewmodel.FolderView, []viewmodel.FileView) {

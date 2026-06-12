@@ -6,14 +6,26 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 	<div
 		class="card"
 		data-file-name={ file.Name }
-		x-data="{ editing: false }"
+		data-file-id={ file.ID }
+		x-data="{ editing: false, menuOpen: false, moving: false, folders: [] }"
 		title={ file.Name }
+		@contextmenu.prevent="menuOpen = true"
+		@touchstart.passive="$el._lpt = setTimeout(() => { menuOpen = true; navigator.vibrate && navigator.vibrate(30) }, 500)"
+		@touchend.passive="clearTimeout($el._lpt)"
+		@touchmove.passive="clearTimeout($el._lpt)"
+		@keydown.escape.window="menuOpen = false; moving = false"
+		@click.outside="menuOpen = false; moving = false"
 		hx-get={ string(templ.SafeURL("/api/file/" + file.ID + "/preview")) }
 		hx-target="#preview-panel"
 		hx-swap="innerHTML"
-		hx-trigger="click[!event.target.closest('.card-btn') && !event.target.closest('form') && !event.target.closest('input')]"
+		hx-trigger="click[!event.target.closest('.card-btn') && !event.target.closest('.card-move-folder') && !event.target.closest('form') && !event.target.closest('input') && !menuOpen && !editing]"
 	>
-		<div class="card-actions" x-show="!editing" onclick="event.stopPropagation()">
+		<div
+			class="card-actions"
+			x-show="menuOpen && !editing"
+			x-cloak
+			@click.self="menuOpen = false; moving = false"
+		>
 			<div class="card-actions-row">
 				<a
 					class="card-btn"
@@ -23,15 +35,61 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 				<button
 					class="card-btn"
 					data-file-id={ file.ID }
-					onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
+					onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId); $dispatch('close-menu')"
+					@close-menu.window="menuOpen = false"
 				>Share</button>
 				if canEdit {
 					<button
 						class="card-btn"
-						x-on:click.stop="editing = true; $nextTick(() => $refs.fileRenameInput.focus())"
+						x-on:click.stop="editing = true; menuOpen = false"
 					>Rename</button>
+					<button
+						class="card-btn"
+						x-on:click.stop="
+							moving = !moving;
+							if (moving && folders.length === 0) {
+								fetch('/api/folders').then(r => r.json()).then(d => { folders = d })
+							}
+						"
+					>Move to…</button>
 				}
 			</div>
+			if canEdit {
+				<div class="card-move-picker" x-show="moving" x-cloak onclick="event.stopPropagation()">
+					<button
+						class="card-move-folder"
+						x-on:click.stop="
+							const fid = $el.closest('.card').dataset.fileId;
+							htmx.ajax('PATCH', '/files/' + fid + '/folder', {
+								source: $el,
+								target: $el.closest('.card'),
+								swap: 'outerHTML',
+								values: { folderId: '' }
+							});
+							menuOpen = false; moving = false
+						"
+					>⬆ Root (no folder)</button>
+					<template x-for="f in folders" :key="f.id">
+						<button
+							class="card-move-folder"
+							x-text="'📁 ' + f.name"
+							x-on:click.stop="
+								const fid = $el.closest('.card').dataset.fileId;
+								fetch('/files/' + fid + '/folder', {
+									method: 'PATCH',
+									headers: { 'Content-Type': 'application/json' },
+									body: JSON.stringify({ folderId: f.id })
+								}).then(r => r.text()).then(html => {
+									const card = $el.closest('.card');
+									card.outerHTML = html;
+									htmx.process(document.body);
+								}).catch(() => {});
+								menuOpen = false; moving = false
+							"
+						></button>
+					</template>
+				</div>
+			}
 			if canEdit || canHardDelete {
 				<div class="card-actions-row">
 					if canEdit {

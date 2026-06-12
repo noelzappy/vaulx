@@ -104,6 +104,7 @@ func main() {
 		// File operations
 		r.Delete("/files/{fileID}", filesHandler.DeleteFile)
 		r.Patch("/files/{fileID}/name", filesHandler.RenameFile)
+		r.Patch("/files/{fileID}/folder", filesHandler.MoveFile)
 		r.Post("/files/{fileID}/share", shareHandler.CreateShare)
 
 		// Upload
@@ -112,6 +113,7 @@ func main() {
 
 		// Preview
 		r.Get("/api/file/{fileID}/preview", filesHandler.PreviewFile)
+		r.Get("/api/folders", filesHandler.ListFoldersJSON)
 
 		// Multipart upload
 		r.Route("/api/s3/multipart", func(r chi.Router) {
