@@ -31,15 +31,19 @@ function initUppy(targetFolderId) {
 
   uppy.use(Uppy.AwsS3, {
     companionUrl: window.location.origin,
-    limit: 4,
+    limit: 6,
     shouldUseMultipart: function(file) {
       console.log('[vaulx-uppy] shouldUseMultipart →', true, 'file:', file.name, file.size, 'bytes');
       return true;
     },
     getChunkSize: function(file) {
-      var chunk = 50 * 1024 * 1024; // 50 MB — keeps part count low for large files
+      // Target ~10 parts so the 6-way concurrency stays busy, clamped to
+      // 10–100 MB: small enough to parallelize mid-size files, large
+      // enough to keep part counts low (retry storms killed 5MB chunks).
+      var MB = 1024 * 1024;
+      var chunk = Math.max(10 * MB, Math.min(100 * MB, Math.ceil(file.size / 10)));
       var parts = Math.ceil(file.size / chunk);
-      console.log('[vaulx-uppy] getChunkSize: 50MB chunks → ~' + parts + ' parts for ' + file.name);
+      console.log('[vaulx-uppy] getChunkSize: ' + Math.round(chunk / MB) + 'MB chunks → ~' + parts + ' parts for ' + file.name);
       return chunk;
     },
 
