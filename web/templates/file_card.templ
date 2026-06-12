@@ -8,13 +8,10 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		data-file-name={ file.Name }
 		data-file-id={ file.ID }
 		x-data="{ editing: false, menuOpen: false, menuX: 0, menuY: 0, moving: false, folders: [] }"
+		:data-menu-open="menuOpen ? '1' : null"
+		:data-editing="editing ? '1' : null"
 		title={ file.Name }
-		@contextmenu.prevent="
-			const mw = 192, mh = canEdit ? 280 : 120;
-			menuX = ($event.clientX + mw > window.innerWidth) ? $event.clientX - mw : $event.clientX;
-			menuY = ($event.clientY + mh > window.innerHeight) ? $event.clientY - mh : $event.clientY;
-			menuOpen = true
-		"
+		@contextmenu.prevent="menuX = ($event.clientX + 192 > window.innerWidth) ? $event.clientX - 192 : $event.clientX; menuY = ($event.clientY + 260 > window.innerHeight) ? $event.clientY - 260 : $event.clientY; menuOpen = true"
 		@touchstart.passive="$el._lpt = setTimeout(() => {
 			const r = $el.getBoundingClientRect();
 			menuX = Math.min(r.left + 20, window.innerWidth - 196);
@@ -28,7 +25,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		hx-get={ string(templ.SafeURL("/api/file/" + file.ID + "/preview")) }
 		hx-target="#preview-panel"
 		hx-swap="innerHTML"
-		hx-trigger="click[!event.target.closest('.ctx-menu') && !event.target.closest('form') && !event.target.closest('input') && !menuOpen && !editing]"
+		hx-trigger="click[!event.target.closest('[data-menu-open]') && !event.target.closest('[data-editing]') && !event.target.closest('.ctx-menu') && !event.target.closest('form') && !event.target.closest('input')]"
 	>
 		<!-- Floating context menu — position:fixed so it escapes card boundaries -->
 		<div
@@ -37,7 +34,6 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 			x-cloak
 			:style="`left:${menuX}px;top:${menuY}px`"
 			@click.outside="menuOpen = false; moving = false"
-			x-transition.duration.100ms
 		>
 			<a
 				class="ctx-item"
