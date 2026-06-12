@@ -14,39 +14,47 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		hx-trigger="click[!event.target.closest('.card-btn') && !event.target.closest('form') && !event.target.closest('input')]"
 	>
 		<div class="card-actions" x-show="!editing" onclick="event.stopPropagation()">
-			<a
-				class="card-btn"
-				href={ templ.SafeURL("/files/" + file.ID + "/download") }
-				onclick="event.stopPropagation()"
-			>Download</a>
-			<button
-				class="card-btn"
-				data-file-id={ file.ID }
-				onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
-			>Share</button>
-			if canEdit {
+			<div class="card-actions-row">
+				<a
+					class="card-btn"
+					href={ templ.SafeURL("/files/" + file.ID + "/download") }
+					onclick="event.stopPropagation()"
+				>Download</a>
 				<button
 					class="card-btn"
-					x-on:click.stop="editing = true; $nextTick(() => $refs.fileRenameInput.focus())"
-				>Rename</button>
-				<button
-					class="card-btn card-btn-danger"
-					hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
-					hx-confirm={ "Delete \"" + file.Name + "\"? The file will be hidden but can be recovered by an admin." }
-					hx-target="closest .card"
-					hx-swap="outerHTML swap:0.3s"
-					onclick="event.stopPropagation()"
-				>Delete</button>
-			}
-			if canHardDelete {
-				<button
-					class="card-btn card-btn-danger"
-					hx-delete={ string(templ.SafeURL("/files/" + file.ID + "?permanent=true")) }
-					hx-confirm={ "Permanently delete \"" + file.Name + "\"? This CANNOT be undone — the file will be removed from storage." }
-					hx-target="closest .card"
-					hx-swap="outerHTML swap:0.3s"
-					onclick="event.stopPropagation()"
-				>Delete Permanently</button>
+					data-file-id={ file.ID }
+					onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
+				>Share</button>
+				if canEdit {
+					<button
+						class="card-btn"
+						x-on:click.stop="editing = true; $nextTick(() => $refs.fileRenameInput.focus())"
+					>Rename</button>
+				}
+			</div>
+			if canEdit || canHardDelete {
+				<div class="card-actions-row">
+					if canEdit {
+						<button
+							class="card-btn card-btn-danger"
+							hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
+							hx-confirm={ "Delete \"" + file.Name + "\"? The file will be hidden but can be recovered by an admin." }
+							hx-target="closest .card"
+							hx-swap="outerHTML swap:0.3s"
+							onclick="event.stopPropagation()"
+						>Delete</button>
+					}
+					if canHardDelete {
+						<button
+							class="card-btn card-btn-danger"
+							hx-delete={ string(templ.SafeURL("/files/" + file.ID + "?permanent=true")) }
+							hx-confirm={ "Permanently delete \"" + file.Name + "\"? This CANNOT be undone — the file will be removed from storage." }
+							hx-target="closest .card"
+							hx-swap="outerHTML swap:0.3s"
+							onclick="event.stopPropagation()"
+						>Delete Permanently</button>
+					}
+				</div>
 			}
 		</div>
 		<div class="card-icon" x-show="!editing">

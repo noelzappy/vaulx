@@ -175,6 +175,7 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 	var body struct {
 		Key    string `json:"key"`
 		FileID string `json:"fileId"`
+		Size   int64  `json:"size"`
 		Parts  []struct {
 			PartNumber int32  `json:"PartNumber"`
 			ETag       string `json:"ETag"`
@@ -205,7 +206,7 @@ func (h *MultipartHandler) CompleteMultipartUpload(w http.ResponseWriter, r *htt
 	}
 
 	file, err := h.queries.UpdateFileSizeAndStatus(r.Context(), db.UpdateFileSizeAndStatusParams{
-		SizeBytes: 0,
+		SizeBytes: body.Size,
 		Status:    "active",
 		ID:        fileUUID,
 	})

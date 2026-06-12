@@ -114,7 +114,7 @@ function initUppy(targetFolderId) {
     completeMultipartUpload: async function(file, _ref) {
       var uploadId = _ref.uploadId, key = _ref.key, parts = _ref.parts;
       var fileId = (file.meta && file.meta.fileId) || '';
-      var payload = { key: key, fileId: fileId, parts: parts };
+      var payload = { key: key, fileId: fileId, size: file.size, parts: parts };
       console.log('[vaulx-uppy] completeMultipartUpload → POST /api/s3/multipart/' + uploadId + '/complete', payload);
       var res = await fetch('/api/s3/multipart/' + uploadId + '/complete', {
         method: 'POST',
