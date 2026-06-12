@@ -73,14 +73,14 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" @contextmenu.prevent=\"menuX = ($event.clientX + 192 > window.innerWidth) ? $event.clientX - 192 : $event.clientX; menuY = ($event.clientY + 120 > window.innerHeight) ? $event.clientY - 120 : $event.clientY; menuOpen = true\" @touchstart.passive=\"$el._lpt = setTimeout(() => {\n\t\t\tconst r = $el.getBoundingClientRect();\n\t\t\tmenuX = Math.min(r.left + 20, window.innerWidth - 196);\n\t\t\tmenuY = Math.min(r.bottom + 4, window.innerHeight - 120);\n\t\t\tmenuOpen = true;\n\t\t\tnavigator.vibrate && navigator.vibrate(30)\n\t\t}, 500)\" @touchend.passive=\"clearTimeout($el._lpt)\" @touchmove.passive=\"clearTimeout($el._lpt)\" @keydown.escape.window=\"menuOpen = false\"><!-- Floating context menu --><div class=\"ctx-menu\" x-show=\"menuOpen && !editing\" x-cloak :style=\"`left:${menuX}px;top:${menuY}px`\" @click.outside=\"menuOpen = false\"><button class=\"ctx-item\" x-on:click.stop=\"editing = true; menuOpen = false; $nextTick(() => $refs.renameInput.focus())\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125\"></path></svg> Rename</button><div class=\"ctx-sep\"></div><button class=\"ctx-item ctx-item-danger\" hx-delete=\"")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "\" @contextmenu.prevent=\"menuX = ($event.clientX + 192 > window.innerWidth) ? $event.clientX - 192 : $event.clientX; menuY = ($event.clientY + 120 > window.innerHeight) ? $event.clientY - 120 : $event.clientY; menuOpen = true\" @touchstart.passive=\"$el._lpt = setTimeout(() => {\n\t\t\tconst r = $el.getBoundingClientRect();\n\t\t\tmenuX = Math.min(r.left + 20, window.innerWidth - 196);\n\t\t\tmenuY = Math.min(r.bottom + 4, window.innerHeight - 120);\n\t\t\tmenuOpen = true;\n\t\t\tnavigator.vibrate && navigator.vibrate(30)\n\t\t}, 500)\" @touchend.passive=\"clearTimeout($el._lpt)\" @touchmove.passive=\"clearTimeout($el._lpt)\" @keydown.escape.window=\"menuOpen = false\" ondragover=\"event.preventDefault(); event.dataTransfer.dropEffect = 'move'; this.classList.add('drop-hover')\" ondragleave=\"this.classList.remove('drop-hover')\" ondrop=\"vaulxDropFile(this, event)\"><!-- Floating context menu --><div class=\"ctx-menu\" x-show=\"menuOpen && !editing\" x-cloak :style=\"`left:${menuX}px;top:${menuY}px`\" @click.outside=\"menuOpen = false\"><button class=\"ctx-item\" x-on:click.stop=\"editing = true; menuOpen = false; $nextTick(() => $refs.renameInput.focus())\"><svg xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\" stroke-width=\"1.5\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125\"></path></svg> Rename</button><div class=\"ctx-sep\"></div><button class=\"ctx-item ctx-item-danger\" hx-delete=\"")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var5 string
 		templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs("/files/folders/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 47, Col: 45}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 50, Col: 45}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 		if templ_7745c5c3_Err != nil {
@@ -93,7 +93,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var6 string
 		templ_7745c5c3_Var6, templ_7745c5c3_Err = templ.JoinStringErrs("Delete \"" + folder.Name + "\"? All contents will be removed.")
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 48, Col: 80}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 51, Col: 80}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var6))
 		if templ_7745c5c3_Err != nil {
@@ -106,7 +106,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var7 string
 		templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs("/files/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 62, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 65, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 		if templ_7745c5c3_Err != nil {
@@ -119,7 +119,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var8 string
 		templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinStringErrs("/files/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 65, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 68, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 		if templ_7745c5c3_Err != nil {
@@ -132,7 +132,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var9 string
 		templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs("/files/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 76, Col: 33}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 79, Col: 33}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 		if templ_7745c5c3_Err != nil {
@@ -145,7 +145,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var10 string
 		templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs("/files/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 79, Col: 38}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 82, Col: 38}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 		if templ_7745c5c3_Err != nil {
@@ -158,7 +158,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var11 string
 		templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(folder.Name)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 82, Col: 16}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 85, Col: 16}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 		if templ_7745c5c3_Err != nil {
@@ -171,7 +171,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var12 string
 		templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs("/files/folders/" + folder.ID)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 85, Col: 44}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 88, Col: 44}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 		if templ_7745c5c3_Err != nil {
@@ -184,7 +184,7 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d items", folder.ItemCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 110, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 113, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {

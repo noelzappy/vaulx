@@ -25,6 +25,9 @@ templ FolderCard(folder viewmodel.FolderView) {
 		@touchend.passive="clearTimeout($el._lpt)"
 		@touchmove.passive="clearTimeout($el._lpt)"
 		@keydown.escape.window="menuOpen = false"
+		ondragover="event.preventDefault(); event.dataTransfer.dropEffect = 'move'; this.classList.add('drop-hover')"
+		ondragleave="this.classList.remove('drop-hover')"
+		ondrop="vaulxDropFile(this, event)"
 	>
 		<!-- Floating context menu -->
 		<div

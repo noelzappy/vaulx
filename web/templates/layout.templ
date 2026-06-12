@@ -60,6 +60,25 @@ templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 				});
 			</script>
 			<script>
+				function vaulxDropFile(el, event) {
+					event.preventDefault();
+					el.classList.remove('drop-hover');
+					var fid = event.dataTransfer.getData('text/file-id');
+					if (!fid) return;
+					fetch('/files/' + fid + '/folder', {
+						method: 'PATCH',
+						headers: { 'Content-Type': 'application/json' },
+						body: JSON.stringify({ folderId: el.dataset.folderId })
+					}).then(function(r) {
+						if (!r.ok) throw new Error('move failed');
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'File moved', type: 'success' } }));
+						htmx.ajax('GET', window.location.pathname, { target: '#browser-content', swap: 'outerHTML' });
+					}).catch(function() {
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Failed to move file', type: 'error' } }));
+					});
+				}
+			</script>
+			<script>
 				async function copyShareLink(fileID) {
 					try {
 						const res = await fetch('/files/' + fileID + '/share', { method: 'POST' })

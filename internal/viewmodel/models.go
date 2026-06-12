@@ -28,6 +28,7 @@ type FileView struct {
 	Status       string
 	CreatedAt    time.Time
 	RelativeDate string
+	ThumbURL     string // presigned GET URL for image files; empty otherwise
 }
 
 type FolderView struct {

@@ -11,6 +11,10 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		:data-menu-open="menuOpen ? '1' : null"
 		:data-editing="editing ? '1' : null"
 		title={ file.Name }
+		if canEdit {
+			draggable="true"
+			ondragstart="event.dataTransfer.setData('text/file-id', this.dataset.fileId); event.dataTransfer.effectAllowed = 'move'"
+		}
 		@contextmenu.prevent="menuX = ($event.clientX + 192 > window.innerWidth) ? $event.clientX - 192 : $event.clientX; menuY = ($event.clientY + 260 > window.innerHeight) ? $event.clientY - 260 : $event.clientY; menuOpen = true"
 		@touchstart.passive="$el._lpt = setTimeout(() => {
 			const r = $el.getBoundingClientRect();
@@ -140,9 +144,20 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		</div>
 
 		<!-- Card content -->
-		<div class="card-icon" x-show="!editing">
-			@fileTypeIcon(file.MimeType)
-		</div>
+		if file.ThumbURL != "" {
+			<img
+				class="card-thumb"
+				x-show="!editing"
+				src={ file.ThumbURL }
+				alt={ file.Name }
+				loading="lazy"
+				draggable="false"
+			/>
+		} else {
+			<div class="card-icon" x-show="!editing">
+				@fileTypeIcon(file.MimeType)
+			</div>
+		}
 		<div class="card-name" x-show="!editing">{ file.Name }</div>
 		<div class="card-meta" x-show="!editing">
 			<span>{ file.SizeHuman }</span>

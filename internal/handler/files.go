@@ -699,7 +699,13 @@ func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, db
 		if u, err := h.queries.GetUserByID(ctx, f.UploadedBy); err == nil {
 			uploaderName = u.Name
 		}
-		files = append(files, viewmodel.FileFromDB(f, uploaderName))
+		fv := viewmodel.FileFromDB(f, uploaderName)
+		if f.MimeType != nil && strings.HasPrefix(*f.MimeType, "image/") {
+			if url, err := storage.PresignGET(ctx, f.S3Key); err == nil {
+				fv.ThumbURL = url
+			}
+		}
+		files = append(files, fv)
 	}
 	return folders, files
 }
