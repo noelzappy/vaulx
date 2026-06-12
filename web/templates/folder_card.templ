@@ -88,7 +88,7 @@ templ FolderCard(folder viewmodel.FolderView) {
 				hx-patch={ "/files/folders/" + folder.ID }
 				hx-target="closest .card"
 				hx-swap="outerHTML"
-				style="display:flex;gap:6px;align-items:center;"
+				style="display:flex;flex-direction:column;gap:8px;"
 			>
 				<input
 					class="input folder-rename-input"
@@ -100,13 +100,15 @@ templ FolderCard(folder viewmodel.FolderView) {
 					required
 					onclick="event.stopPropagation()"
 				/>
-				<button class="btn btn-primary" type="submit" style="padding:5px 10px;font-size:12px;" onclick="event.stopPropagation()">Save</button>
-				<button
-					class="btn btn-ghost"
-					type="button"
-					style="padding:5px 10px;font-size:12px;"
-					x-on:click.stop="editing = false; draftName = $el.closest('.card').dataset.folderName"
-				>Cancel</button>
+				<div style="display:flex;gap:6px;">
+					<button class="btn btn-primary" type="submit" style="padding:5px 10px;font-size:12px;" onclick="event.stopPropagation()">Save</button>
+					<button
+						class="btn btn-ghost"
+						type="button"
+						style="padding:5px 10px;font-size:12px;"
+						x-on:click.stop="editing = false; draftName = $el.closest('.card').dataset.folderName"
+					>Cancel</button>
+				</div>
 			</form>
 		</div>
 		<div class="card-meta" x-show="!editing">

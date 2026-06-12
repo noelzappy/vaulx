@@ -177,14 +177,14 @@ func FolderCard(folder viewmodel.FolderView) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-target=\"closest .card\" hx-swap=\"outerHTML\" style=\"display:flex;gap:6px;align-items:center;\"><input class=\"input folder-rename-input\" name=\"name\" x-ref=\"renameInput\" x-model=\"draftName\" x-on:keydown.escape.prevent=\"editing = false; draftName = $el.closest('.card').dataset.folderName\" placeholder=\"Folder name\" required onclick=\"event.stopPropagation()\"> <button class=\"btn btn-primary\" type=\"submit\" style=\"padding:5px 10px;font-size:12px;\" onclick=\"event.stopPropagation()\">Save</button> <button class=\"btn btn-ghost\" type=\"button\" style=\"padding:5px 10px;font-size:12px;\" x-on:click.stop=\"editing = false; draftName = $el.closest('.card').dataset.folderName\">Cancel</button></form></div><div class=\"card-meta\" x-show=\"!editing\"><span>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "\" hx-target=\"closest .card\" hx-swap=\"outerHTML\" style=\"display:flex;flex-direction:column;gap:8px;\"><input class=\"input folder-rename-input\" name=\"name\" x-ref=\"renameInput\" x-model=\"draftName\" x-on:keydown.escape.prevent=\"editing = false; draftName = $el.closest('.card').dataset.folderName\" placeholder=\"Folder name\" required onclick=\"event.stopPropagation()\"><div style=\"display:flex;gap:6px;\"><button class=\"btn btn-primary\" type=\"submit\" style=\"padding:5px 10px;font-size:12px;\" onclick=\"event.stopPropagation()\">Save</button> <button class=\"btn btn-ghost\" type=\"button\" style=\"padding:5px 10px;font-size:12px;\" x-on:click.stop=\"editing = false; draftName = $el.closest('.card').dataset.folderName\">Cancel</button></div></form></div><div class=\"card-meta\" x-show=\"!editing\"><span>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
 		var templ_7745c5c3_Var13 string
 		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d items", folder.ItemCount))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 113, Col: 52}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/folder_card.templ`, Line: 115, Col: 52}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {

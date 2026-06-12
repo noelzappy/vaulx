@@ -171,7 +171,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 				hx-patch={ string(templ.SafeURL("/files/" + file.ID + "/name")) }
 				hx-target="closest .card"
 				hx-swap="outerHTML"
-				style="display:flex;gap:6px;align-items:center;"
+				style="display:flex;flex-direction:column;gap:8px;"
 			>
 				<input
 					class="input file-rename-input"
@@ -182,13 +182,15 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 					required
 					onclick="event.stopPropagation()"
 				/>
-				<button class="btn btn-primary" type="submit" style="padding:5px 10px;font-size:12px;" onclick="event.stopPropagation()">Save</button>
-				<button
-					class="btn btn-ghost"
-					type="button"
-					style="padding:5px 10px;font-size:12px;"
-					x-on:click.stop="editing = false"
-				>Cancel</button>
+				<div style="display:flex;gap:6px;">
+					<button class="btn btn-primary" type="submit" style="padding:5px 10px;font-size:12px;" onclick="event.stopPropagation()">Save</button>
+					<button
+						class="btn btn-ghost"
+						type="button"
+						style="padding:5px 10px;font-size:12px;"
+						x-on:click.stop="editing = false"
+					>Cancel</button>
+				</div>
 			</form>
 		</div>
 	</div>

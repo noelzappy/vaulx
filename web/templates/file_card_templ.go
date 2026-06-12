@@ -317,7 +317,7 @@ func FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) templ.C
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" hx-target=\"closest .card\" hx-swap=\"outerHTML\" style=\"display:flex;gap:6px;align-items:center;\"><input class=\"input file-rename-input\" name=\"name\" x-bind:value=\"$el.closest('.card').dataset.fileName\" x-on:keydown.escape.prevent=\"editing = false\" placeholder=\"File name\" required onclick=\"event.stopPropagation()\"> <button class=\"btn btn-primary\" type=\"submit\" style=\"padding:5px 10px;font-size:12px;\" onclick=\"event.stopPropagation()\">Save</button> <button class=\"btn btn-ghost\" type=\"button\" style=\"padding:5px 10px;font-size:12px;\" x-on:click.stop=\"editing = false\">Cancel</button></form></div></div>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 30, "\" hx-target=\"closest .card\" hx-swap=\"outerHTML\" style=\"display:flex;flex-direction:column;gap:8px;\"><input class=\"input file-rename-input\" name=\"name\" x-bind:value=\"$el.closest('.card').dataset.fileName\" x-on:keydown.escape.prevent=\"editing = false\" placeholder=\"File name\" required onclick=\"event.stopPropagation()\"><div style=\"display:flex;gap:6px;\"><button class=\"btn btn-primary\" type=\"submit\" style=\"padding:5px 10px;font-size:12px;\" onclick=\"event.stopPropagation()\">Save</button> <button class=\"btn btn-ghost\" type=\"button\" style=\"padding:5px 10px;font-size:12px;\" x-on:click.stop=\"editing = false\">Cancel</button></div></form></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

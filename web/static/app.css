@@ -115,7 +115,7 @@ button{cursor:pointer;font:inherit}
 /* Toolbar */
 .toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
 .toolbar-title{font-size:16px;font-weight:600;color:var(--text)}
-.search-box{max-width:220px;padding:6px 10px;font-size:13px}
+.search-box{width:320px;max-width:40vw;padding:7px 12px;font-size:13px}
 
 /* Sidebar user section */
 .sidebar-user{padding:12px 16px;border-top:1px solid var(--border);margin-top:auto}
@@ -221,16 +221,16 @@ button{cursor:pointer;font:inherit}
 
 /* ── Inline Folder Rename ── */
 .folder-rename-input {
-  padding: 5px 8px;
+  padding: 7px 10px;
   font-size: 12.5px;
-  max-width: 148px;
+  width: 100%;
 }
 
 /* ── Inline File Rename ── */
 .file-rename-input {
-  padding: 5px 8px;
+  padding: 7px 10px;
   font-size: 12.5px;
-  max-width: 160px;
+  width: 100%;
 }
 
 /* Error pages */
