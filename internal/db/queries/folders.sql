@@ -50,3 +50,9 @@ SELECT COUNT(*) FROM (
   UNION ALL
   SELECT id FROM files WHERE folder_id = $1 AND status = 'active'
 ) sub;
+
+-- name: SearchFolders :many
+SELECT * FROM folders
+WHERE name ILIKE '%' || $1 || '%'
+ORDER BY name ASC
+LIMIT 50;

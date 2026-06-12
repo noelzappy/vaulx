@@ -27,14 +27,18 @@ type Querier interface {
 	GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID) (Share, error)
 	GetFile(ctx context.Context, id pgtype.UUID) (File, error)
 	GetFolder(ctx context.Context, id pgtype.UUID) (Folder, error)
+	GetShare(ctx context.Context, id pgtype.UUID) (Share, error)
 	GetShareBySlug(ctx context.Context, slug string) (Share, error)
 	GetUserByEmail(ctx context.Context, email string) (User, error)
 	GetUserByID(ctx context.Context, id pgtype.UUID) (User, error)
 	GrantPermission(ctx context.Context, arg GrantPermissionParams) (Permission, error)
+	HardDeleteFile(ctx context.Context, id pgtype.UUID) error
 	IncrementShareViewCount(ctx context.Context, id pgtype.UUID) error
 	ListAllFolders(ctx context.Context) ([]Folder, error)
+	ListAllShares(ctx context.Context) ([]ListAllSharesRow, error)
 	ListAuditLogByAction(ctx context.Context, arg ListAuditLogByActionParams) ([]ListAuditLogByActionRow, error)
 	ListAuditLogPage(ctx context.Context, arg ListAuditLogPageParams) ([]ListAuditLogPageRow, error)
+	ListDeletedFiles(ctx context.Context) ([]ListDeletedFilesRow, error)
 	ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) ([]File, error)
 	ListFilesByFolderForUser(ctx context.Context, arg ListFilesByFolderForUserParams) ([]File, error)
 	ListFilesPage(ctx context.Context, arg ListFilesPageParams) ([]File, error)
@@ -46,9 +50,14 @@ type Querier interface {
 	ListRootFilesForUser(ctx context.Context, userID pgtype.UUID) ([]File, error)
 	ListRootFolders(ctx context.Context) ([]Folder, error)
 	ListRootFoldersForUser(ctx context.Context, userID pgtype.UUID) ([]Folder, error)
+	ListSharesByCreator(ctx context.Context, createdBy pgtype.UUID) ([]ListSharesByCreatorRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
 	MoveFileToFolder(ctx context.Context, arg MoveFileToFolderParams) (File, error)
+	RestoreFile(ctx context.Context, id pgtype.UUID) (File, error)
 	RevokePermission(ctx context.Context, id pgtype.UUID) error
+	RevokeShare(ctx context.Context, id pgtype.UUID) error
+	SearchFiles(ctx context.Context, dollar_1 *string) ([]File, error)
+	SearchFolders(ctx context.Context, dollar_1 *string) ([]Folder, error)
 	SoftDeleteFile(ctx context.Context, id pgtype.UUID) error
 	UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error)
 	UpdateFileSizeAndStatus(ctx context.Context, arg UpdateFileSizeAndStatusParams) (File, error)

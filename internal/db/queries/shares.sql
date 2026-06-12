@@ -15,3 +15,24 @@ WHERE file_id = $1
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC
 LIMIT 1;
+
+-- name: ListAllShares :many
+SELECT s.*, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+FROM shares s
+JOIN files f ON f.id = s.file_id
+LEFT JOIN users u ON u.id = s.created_by
+ORDER BY s.created_at DESC;
+
+-- name: ListSharesByCreator :many
+SELECT s.*, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+FROM shares s
+JOIN files f ON f.id = s.file_id
+LEFT JOIN users u ON u.id = s.created_by
+WHERE s.created_by = $1
+ORDER BY s.created_at DESC;
+
+-- name: GetShare :one
+SELECT * FROM shares WHERE id = $1;
+
+-- name: RevokeShare :exec
+DELETE FROM shares WHERE id = $1;

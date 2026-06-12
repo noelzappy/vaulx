@@ -272,6 +272,39 @@ func (q *Queries) MoveFileToFolder(ctx context.Context, arg MoveFileToFolderPara
 	return i, err
 }
 
+const searchFolders = `-- name: SearchFolders :many
+SELECT id, parent_id, name, owner_id, created_at FROM folders
+WHERE name ILIKE '%' || $1 || '%'
+ORDER BY name ASC
+LIMIT 50
+`
+
+func (q *Queries) SearchFolders(ctx context.Context, dollar_1 *string) ([]Folder, error) {
+	rows, err := q.db.Query(ctx, searchFolders, dollar_1)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Folder
+	for rows.Next() {
+		var i Folder
+		if err := rows.Scan(
+			&i.ID,
+			&i.ParentID,
+			&i.Name,
+			&i.OwnerID,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateFolderName = `-- name: UpdateFolderName :one
 UPDATE folders SET name = $1 WHERE id = $2 RETURNING id, parent_id, name, owner_id, created_at
 `

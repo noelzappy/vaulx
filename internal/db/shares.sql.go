@@ -73,6 +73,28 @@ func (q *Queries) GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID
 	return i, err
 }
 
+const getShare = `-- name: GetShare :one
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares WHERE id = $1
+`
+
+func (q *Queries) GetShare(ctx context.Context, id pgtype.UUID) (Share, error) {
+	row := q.db.QueryRow(ctx, getShare, id)
+	var i Share
+	err := row.Scan(
+		&i.ID,
+		&i.FileID,
+		&i.Slug,
+		&i.ShareType,
+		&i.PasswordHash,
+		&i.ExpiresAt,
+		&i.MaxViews,
+		&i.ViewCount,
+		&i.CreatedBy,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const getShareBySlug = `-- name: GetShareBySlug :one
 SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares WHERE slug = $1
 `
@@ -101,5 +123,131 @@ UPDATE shares SET view_count = view_count + 1 WHERE id = $1
 
 func (q *Queries) IncrementShareViewCount(ctx context.Context, id pgtype.UUID) error {
 	_, err := q.db.Exec(ctx, incrementShareViewCount, id)
+	return err
+}
+
+const listAllShares = `-- name: ListAllShares :many
+SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+FROM shares s
+JOIN files f ON f.id = s.file_id
+LEFT JOIN users u ON u.id = s.created_by
+ORDER BY s.created_at DESC
+`
+
+type ListAllSharesRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	FileID       pgtype.UUID        `json:"file_id"`
+	Slug         string             `json:"slug"`
+	ShareType    string             `json:"share_type"`
+	PasswordHash *string            `json:"password_hash"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	MaxViews     *int32             `json:"max_views"`
+	ViewCount    int32              `json:"view_count"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	FileName     string             `json:"file_name"`
+	FileStatus   string             `json:"file_status"`
+	CreatorName  *string            `json:"creator_name"`
+}
+
+func (q *Queries) ListAllShares(ctx context.Context) ([]ListAllSharesRow, error) {
+	rows, err := q.db.Query(ctx, listAllShares)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllSharesRow
+	for rows.Next() {
+		var i ListAllSharesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FileID,
+			&i.Slug,
+			&i.ShareType,
+			&i.PasswordHash,
+			&i.ExpiresAt,
+			&i.MaxViews,
+			&i.ViewCount,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.FileName,
+			&i.FileStatus,
+			&i.CreatorName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listSharesByCreator = `-- name: ListSharesByCreator :many
+SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+FROM shares s
+JOIN files f ON f.id = s.file_id
+LEFT JOIN users u ON u.id = s.created_by
+WHERE s.created_by = $1
+ORDER BY s.created_at DESC
+`
+
+type ListSharesByCreatorRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	FileID       pgtype.UUID        `json:"file_id"`
+	Slug         string             `json:"slug"`
+	ShareType    string             `json:"share_type"`
+	PasswordHash *string            `json:"password_hash"`
+	ExpiresAt    pgtype.Timestamptz `json:"expires_at"`
+	MaxViews     *int32             `json:"max_views"`
+	ViewCount    int32              `json:"view_count"`
+	CreatedBy    pgtype.UUID        `json:"created_by"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	FileName     string             `json:"file_name"`
+	FileStatus   string             `json:"file_status"`
+	CreatorName  *string            `json:"creator_name"`
+}
+
+func (q *Queries) ListSharesByCreator(ctx context.Context, createdBy pgtype.UUID) ([]ListSharesByCreatorRow, error) {
+	rows, err := q.db.Query(ctx, listSharesByCreator, createdBy)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListSharesByCreatorRow
+	for rows.Next() {
+		var i ListSharesByCreatorRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FileID,
+			&i.Slug,
+			&i.ShareType,
+			&i.PasswordHash,
+			&i.ExpiresAt,
+			&i.MaxViews,
+			&i.ViewCount,
+			&i.CreatedBy,
+			&i.CreatedAt,
+			&i.FileName,
+			&i.FileStatus,
+			&i.CreatorName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const revokeShare = `-- name: RevokeShare :exec
+DELETE FROM shares WHERE id = $1
+`
+
+func (q *Queries) RevokeShare(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, revokeShare, id)
 	return err
 }

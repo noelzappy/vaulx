@@ -94,6 +94,67 @@ func (q *Queries) GetFile(ctx context.Context, id pgtype.UUID) (File, error) {
 	return i, err
 }
 
+const hardDeleteFile = `-- name: HardDeleteFile :exec
+DELETE FROM files WHERE id = $1
+`
+
+func (q *Queries) HardDeleteFile(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, hardDeleteFile, id)
+	return err
+}
+
+const listDeletedFiles = `-- name: ListDeletedFiles :many
+SELECT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at, u.name AS uploader_name
+FROM files f
+LEFT JOIN users u ON u.id = f.uploaded_by
+WHERE f.status = 'deleted'
+ORDER BY f.created_at DESC
+`
+
+type ListDeletedFilesRow struct {
+	ID           pgtype.UUID        `json:"id"`
+	FolderID     pgtype.UUID        `json:"folder_id"`
+	Name         string             `json:"name"`
+	S3Key        string             `json:"s3_key"`
+	SizeBytes    int64              `json:"size_bytes"`
+	MimeType     *string            `json:"mime_type"`
+	UploadedBy   pgtype.UUID        `json:"uploaded_by"`
+	Status       string             `json:"status"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UploaderName *string            `json:"uploader_name"`
+}
+
+func (q *Queries) ListDeletedFiles(ctx context.Context) ([]ListDeletedFilesRow, error) {
+	rows, err := q.db.Query(ctx, listDeletedFiles)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListDeletedFilesRow
+	for rows.Next() {
+		var i ListDeletedFilesRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.FolderID,
+			&i.Name,
+			&i.S3Key,
+			&i.SizeBytes,
+			&i.MimeType,
+			&i.UploadedBy,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UploaderName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listFilesByFolder = `-- name: ListFilesByFolder :many
 SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
 WHERE folder_id = $1 AND status = 'active'
@@ -223,6 +284,66 @@ ORDER BY f.name ASC
 
 func (q *Queries) ListRootFilesForUser(ctx context.Context, userID pgtype.UUID) ([]File, error) {
 	rows, err := q.db.Query(ctx, listRootFilesForUser, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.FolderID,
+			&i.Name,
+			&i.S3Key,
+			&i.SizeBytes,
+			&i.MimeType,
+			&i.UploadedBy,
+			&i.Status,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const restoreFile = `-- name: RestoreFile :one
+UPDATE files SET status = 'active'
+WHERE id = $1 AND status = 'deleted'
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+`
+
+func (q *Queries) RestoreFile(ctx context.Context, id pgtype.UUID) (File, error) {
+	row := q.db.QueryRow(ctx, restoreFile, id)
+	var i File
+	err := row.Scan(
+		&i.ID,
+		&i.FolderID,
+		&i.Name,
+		&i.S3Key,
+		&i.SizeBytes,
+		&i.MimeType,
+		&i.UploadedBy,
+		&i.Status,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const searchFiles = `-- name: SearchFiles :many
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
+WHERE status = 'active' AND name ILIKE '%' || $1 || '%'
+ORDER BY name ASC
+LIMIT 100
+`
+
+func (q *Queries) SearchFiles(ctx context.Context, dollar_1 *string) ([]File, error) {
+	rows, err := q.db.Query(ctx, searchFiles, dollar_1)
 	if err != nil {
 		return nil, err
 	}

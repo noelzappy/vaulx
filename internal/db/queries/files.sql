@@ -44,3 +44,24 @@ UPDATE files SET status = 'deleted' WHERE id = $1;
 
 -- name: UpdateFileName :one
 UPDATE files SET name = $1 WHERE id = $2 AND status = 'active' RETURNING *;
+
+-- name: SearchFiles :many
+SELECT * FROM files
+WHERE status = 'active' AND name ILIKE '%' || $1 || '%'
+ORDER BY name ASC
+LIMIT 100;
+
+-- name: ListDeletedFiles :many
+SELECT f.*, u.name AS uploader_name
+FROM files f
+LEFT JOIN users u ON u.id = f.uploaded_by
+WHERE f.status = 'deleted'
+ORDER BY f.created_at DESC;
+
+-- name: RestoreFile :one
+UPDATE files SET status = 'active'
+WHERE id = $1 AND status = 'deleted'
+RETURNING *;
+
+-- name: HardDeleteFile :exec
+DELETE FROM files WHERE id = $1;
