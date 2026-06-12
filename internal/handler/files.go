@@ -373,24 +373,35 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.queries.SoftDeleteFile(r.Context(), fileUUID); err != nil {
-		http.Error(w, "failed to delete file", http.StatusInternalServerError)
-		return
+	if permanent {
+		if err := storage.DeleteObject(r.Context(), file.S3Key); err != nil {
+			_ = err // S3 object may already be gone; still remove the record
+		}
+		if err := h.queries.HardDeleteFile(r.Context(), fileUUID); err != nil {
+			http.Error(w, "failed to delete file", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		if err := h.queries.SoftDeleteFile(r.Context(), fileUUID); err != nil {
+			http.Error(w, "failed to delete file", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	userUUID, _ := viewmodel.UUIDFromString(user.ID)
 	resourceType := "file"
+	action := "file.delete"
+	if permanent {
+		action = "file.hard_delete"
+	}
 	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
 		UserID:       userUUID,
-		Action:       "file.delete",
+		Action:       action,
 		ResourceType: &resourceType,
 		ResourceID:   fileUUID,
 	})
 
 	if permanent {
-		if err := storage.DeleteObject(r.Context(), file.S3Key); err != nil {
-			_ = err // log but don't fail — record already soft-deleted
-		}
 		w.Header().Set("HX-Trigger", `{"showToast":{"message":"File permanently deleted","type":"success"}}`)
 	} else {
 		w.Header().Set("HX-Trigger", `{"showToast":{"message":"File deleted","type":"success"}}`)
