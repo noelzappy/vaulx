@@ -175,3 +175,18 @@ function initUppy(targetFolderId) {
   window.__vaulxUppy = uppy;
   console.log('[vaulx-uppy] Uppy ready');
 }
+
+// Self-booting: mount the uploader whenever #uppy-container is present and
+// empty. Inline scripts don't run on htmx history restores (back/forward),
+// so we watch swap/settle/restore events instead of relying on them.
+(function() {
+  function bootUppy() {
+    var el = document.getElementById('uppy-container');
+    if (!el) return;
+    if (el.querySelector('.uppy-Dashboard')) return; // already mounted
+    initUppy(el.dataset.folderId || '');
+  }
+  document.addEventListener('DOMContentLoaded', bootUppy);
+  document.addEventListener('htmx:afterSettle', bootUppy);
+  window.addEventListener('htmx:historyRestore', bootUppy);
+})();

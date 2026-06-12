@@ -34,12 +34,6 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 		</div>
 		if user.Role == "admin" || user.Role == "editor" {
 			<div id="uppy-container" data-folder-id={ data.FolderID } style="margin-bottom:20px;"></div>
-			<script>
-				(function() {
-					var fid = document.getElementById('uppy-container') && document.getElementById('uppy-container').dataset.folderId || '';
-					if (typeof initUppy === 'function') { initUppy(fid); }
-				})();
-			</script>
 		}
 		<form
 			id="new-folder-form"
@@ -62,7 +56,7 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 				</svg>
 				<p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">This folder is empty</p>
 				if user.Role == "admin" || user.Role == "editor" {
-					<p style="font-size:12.5px;color:var(--text-muted);">Upload files or create a folder to get started.</p>
+					<p style="font-size:12.5px;color:var(--text-muted);">Drop files in the uploader above, or create a folder.</p>
 				}
 			</div>
 		} else {
