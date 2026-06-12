@@ -17,7 +17,8 @@ function initUppy(targetFolderId) {
   });
 
   uppy.use(Uppy.AwsS3Multipart, {
-    shouldUseMultipart: function(file) { return file.size > 100 * 1024 * 1024; },
+    companionUrl: window.location.origin,
+    shouldUseMultipart: function() { return true; },
 
     createMultipartUpload: async function(file) {
       var res = await fetch('/api/s3/multipart', {
