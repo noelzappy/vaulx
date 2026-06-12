@@ -19,6 +19,7 @@ function initUppy(targetFolderId) {
   // Uppy.AwsS3 (v3 unified plugin) supports custom backends without companion.
   // All uploads go through multipart so we only need one code path.
   uppy.use(Uppy.AwsS3, {
+    companionUrl: window.location.origin,
     shouldUseMultipart: function() { return true; },
 
     createMultipartUpload: async function(file) {
