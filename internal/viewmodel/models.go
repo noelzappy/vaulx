@@ -260,6 +260,7 @@ type TrashItemView struct {
 type ShareView struct {
 	ID          string
 	FileName    string
+	TargetType  string // "file" or "folder"
 	FileActive  bool
 	Slug        string
 	CreatorName string

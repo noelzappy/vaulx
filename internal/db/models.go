@@ -59,6 +59,7 @@ type Share struct {
 	ViewCount    int32              `json:"view_count"`
 	CreatedBy    pgtype.UUID        `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	FolderID     pgtype.UUID        `json:"folder_id"`
 }
 
 type User struct {

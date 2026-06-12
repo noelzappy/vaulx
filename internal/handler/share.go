@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -130,6 +131,11 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if share.FolderID.Valid {
+		h.resolveFolderShare(w, r, share)
+		return
+	}
+
 	file, err := h.queries.GetFile(r.Context(), share.FileID)
 	if err != nil || file.Status != "active" {
 		http.NotFound(w, r)
@@ -146,7 +152,174 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, downloadURL, http.StatusFound)
 }
 
-func shareViewFrom(id, fileName, fileStatus, slug string, creatorName *string, createdAt, expiresAt pgtype.Timestamptz, viewCount int32) viewmodel.ShareView {
+// folderInTree reports whether candidate is the shared root or one of its
+// descendants, by walking the parent chain upward (depth-capped).
+func (h *ShareHandler) folderInTree(ctx context.Context, candidate, root pgtype.UUID) bool {
+	if !candidate.Valid || !root.Valid {
+		return false
+	}
+	cur := candidate
+	for i := 0; i < 64; i++ {
+		if cur.Bytes == root.Bytes {
+			return true
+		}
+		folder, err := h.queries.GetFolder(ctx, cur)
+		if err != nil || !folder.ParentID.Valid {
+			return false
+		}
+		cur = folder.ParentID
+	}
+	return false
+}
+
+// resolveFolderShare renders the public read-only browser for a folder share.
+// Subfolder navigation via ?folder= is confined to the shared root's tree.
+func (h *ShareHandler) resolveFolderShare(w http.ResponseWriter, r *http.Request, share db.Share) {
+	ctx := r.Context()
+	target := share.FolderID
+
+	if sub := r.URL.Query().Get("folder"); sub != "" {
+		subUUID, err := viewmodel.UUIDFromString(sub)
+		if err != nil || !h.folderInTree(ctx, subUUID, share.FolderID) {
+			http.NotFound(w, r)
+			return
+		}
+		target = subUUID
+	}
+
+	folder, err := h.queries.GetFolder(ctx, target)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	dbFolders, err := h.queries.ListFoldersByParent(ctx, target)
+	if err != nil {
+		http.Error(w, "failed to list folder", http.StatusInternalServerError)
+		return
+	}
+	dbFiles, err := h.queries.ListFilesByFolder(ctx, target)
+	if err != nil {
+		http.Error(w, "failed to list folder", http.StatusInternalServerError)
+		return
+	}
+
+	folders := make([]viewmodel.FolderView, 0, len(dbFolders))
+	for _, f := range dbFolders {
+		folders = append(folders, viewmodel.FolderView{ID: f.ID.String(), Name: f.Name})
+	}
+	files := make([]viewmodel.FileView, 0, len(dbFiles))
+	for _, f := range dbFiles {
+		files = append(files, viewmodel.FileFromDB(f, ""))
+	}
+
+	isRoot := target.Bytes == share.FolderID.Bytes
+	_ = h.queries.IncrementShareViewCount(ctx, share.ID)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.SharedFolderPage(share.Slug, folder.Name, isRoot, folders, files).Render(ctx, w)
+}
+
+// GET /s/{slug}/file/{fileID} — download a file that belongs to a shared folder tree.
+func (h *ShareHandler) SharedFileDownload(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" || h.queries == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	share, err := h.queries.GetShareBySlug(r.Context(), slug)
+	if err != nil || !share.FolderID.Valid {
+		http.NotFound(w, r)
+		return
+	}
+	if share.ExpiresAt.Valid && time.Now().UTC().After(share.ExpiresAt.Time) {
+		http.Error(w, "link expired", http.StatusGone)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil || file.Status != "active" {
+		http.NotFound(w, r)
+		return
+	}
+	if !file.FolderID.Valid || !h.folderInTree(r.Context(), file.FolderID, share.FolderID) {
+		http.NotFound(w, r)
+		return
+	}
+
+	downloadURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	if err != nil {
+		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, downloadURL, http.StatusFound)
+}
+
+// POST /files/folders/{folderID}/share — editor+ only, creates a 7-day public folder share.
+func (h *ShareHandler) CreateFolderShare(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	folderUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "folderID"))
+	if err != nil {
+		http.Error(w, "invalid folder id", http.StatusBadRequest)
+		return
+	}
+
+	if h.queries == nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+
+	if _, err := h.queries.GetFolder(r.Context(), folderUUID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if existing, err := h.queries.GetActiveShareByFolderID(r.Context(), folderUUID); err == nil {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"url": "/s/" + existing.Slug})
+		return
+	}
+
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
+	slug := hex.EncodeToString(b)
+
+	creatorUUID, err := viewmodel.UUIDFromString(user.ID)
+	if err != nil {
+		http.Error(w, "invalid user id", http.StatusInternalServerError)
+		return
+	}
+
+	share, err := h.queries.CreateFolderShare(r.Context(), db.CreateFolderShareParams{
+		FolderID:  folderUUID,
+		Slug:      slug,
+		ExpiresAt: pgtype.Timestamptz{Time: time.Now().UTC().Add(7 * 24 * time.Hour), Valid: true},
+		CreatedBy: creatorUUID,
+	})
+	if err != nil {
+		http.Error(w, "failed to create share", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"url": "/s/" + share.Slug})
+}
+
+func shareViewFrom(id, targetName, targetType, targetStatus, slug string, creatorName *string, createdAt, expiresAt pgtype.Timestamptz, viewCount int32) viewmodel.ShareView {
 	creator := ""
 	if creatorName != nil {
 		creator = *creatorName
@@ -159,8 +332,9 @@ func shareViewFrom(id, fileName, fileStatus, slug string, creatorName *string, c
 	}
 	return viewmodel.ShareView{
 		ID:          id,
-		FileName:    fileName,
-		FileActive:  fileStatus == "active",
+		FileName:    targetName,
+		TargetType:  targetType,
+		FileActive:  targetStatus == "active",
 		Slug:        slug,
 		CreatorName: creator,
 		Created:     createdAt.Time.Format("Jan 2, 2006"),
@@ -191,7 +365,7 @@ func (h *ShareHandler) SharesPage(w http.ResponseWriter, r *http.Request) {
 		}
 		views = make([]viewmodel.ShareView, 0, len(rows))
 		for _, s := range rows {
-			views = append(views, shareViewFrom(s.ID.String(), s.FileName, s.FileStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
+			views = append(views, shareViewFrom(s.ID.String(), s.TargetName, s.TargetType, s.TargetStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
 		}
 	} else {
 		userUUID, err := viewmodel.UUIDFromString(user.ID)
@@ -206,7 +380,7 @@ func (h *ShareHandler) SharesPage(w http.ResponseWriter, r *http.Request) {
 		}
 		views = make([]viewmodel.ShareView, 0, len(rows))
 		for _, s := range rows {
-			views = append(views, shareViewFrom(s.ID.String(), s.FileName, s.FileStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
+			views = append(views, shareViewFrom(s.ID.String(), s.TargetName, s.TargetType, s.TargetStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
 		}
 	}
 

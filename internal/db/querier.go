@@ -20,11 +20,13 @@ type Querier interface {
 	CreateAuditLog(ctx context.Context, arg CreateAuditLogParams) (AuditLog, error)
 	CreateFile(ctx context.Context, arg CreateFileParams) (File, error)
 	CreateFolder(ctx context.Context, arg CreateFolderParams) (Folder, error)
+	CreateFolderShare(ctx context.Context, arg CreateFolderShareParams) (Share, error)
 	CreateShare(ctx context.Context, arg CreateShareParams) (Share, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeactivateUser(ctx context.Context, arg DeactivateUserParams) (User, error)
 	DeleteFolder(ctx context.Context, id pgtype.UUID) error
 	GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID) (Share, error)
+	GetActiveShareByFolderID(ctx context.Context, folderID pgtype.UUID) (Share, error)
 	GetFile(ctx context.Context, id pgtype.UUID) (File, error)
 	GetFolder(ctx context.Context, id pgtype.UUID) (Folder, error)
 	GetShare(ctx context.Context, id pgtype.UUID) (Share, error)

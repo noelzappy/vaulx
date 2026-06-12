@@ -88,3 +88,34 @@ func TestSearch_Unauthenticated(t *testing.T) {
 		t.Errorf("expected 401, got %d", rr.Code)
 	}
 }
+
+func TestCreateFolderShare_ViewerForbidden(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodPost, "/files/folders/some-id/share", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "viewer"})
+	ctx = withChiParam(ctx, "folderID", "some-id")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.CreateFolderShare(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", rr.Code)
+	}
+}
+
+func TestSharedFileDownload_NoQueries404(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/s/some-slug/file/some-id", nil)
+	ctx := withChiParam(req.Context(), "slug", "some-slug")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.SharedFileDownload(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}

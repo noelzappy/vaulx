@@ -11,10 +11,47 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createFolderShare = `-- name: CreateFolderShare :one
+INSERT INTO shares (folder_id, slug, share_type, expires_at, created_by)
+VALUES ($1, $2, 'public', $3, $4)
+RETURNING id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id
+`
+
+type CreateFolderShareParams struct {
+	FolderID  pgtype.UUID        `json:"folder_id"`
+	Slug      string             `json:"slug"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedBy pgtype.UUID        `json:"created_by"`
+}
+
+func (q *Queries) CreateFolderShare(ctx context.Context, arg CreateFolderShareParams) (Share, error) {
+	row := q.db.QueryRow(ctx, createFolderShare,
+		arg.FolderID,
+		arg.Slug,
+		arg.ExpiresAt,
+		arg.CreatedBy,
+	)
+	var i Share
+	err := row.Scan(
+		&i.ID,
+		&i.FileID,
+		&i.Slug,
+		&i.ShareType,
+		&i.PasswordHash,
+		&i.ExpiresAt,
+		&i.MaxViews,
+		&i.ViewCount,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.FolderID,
+	)
+	return i, err
+}
+
 const createShare = `-- name: CreateShare :one
 INSERT INTO shares (file_id, slug, share_type, expires_at, created_by)
 VALUES ($1, $2, 'public', $3, $4)
-RETURNING id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at
+RETURNING id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id
 `
 
 type CreateShareParams struct {
@@ -43,12 +80,13 @@ func (q *Queries) CreateShare(ctx context.Context, arg CreateShareParams) (Share
 		&i.ViewCount,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.FolderID,
 	)
 	return i, err
 }
 
 const getActiveShareByFileID = `-- name: GetActiveShareByFileID :one
-SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id FROM shares
 WHERE file_id = $1
   AND (expires_at IS NULL OR expires_at > NOW())
 ORDER BY created_at DESC
@@ -69,12 +107,40 @@ func (q *Queries) GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID
 		&i.ViewCount,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.FolderID,
+	)
+	return i, err
+}
+
+const getActiveShareByFolderID = `-- name: GetActiveShareByFolderID :one
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id FROM shares
+WHERE folder_id = $1
+  AND (expires_at IS NULL OR expires_at > NOW())
+ORDER BY created_at DESC
+LIMIT 1
+`
+
+func (q *Queries) GetActiveShareByFolderID(ctx context.Context, folderID pgtype.UUID) (Share, error) {
+	row := q.db.QueryRow(ctx, getActiveShareByFolderID, folderID)
+	var i Share
+	err := row.Scan(
+		&i.ID,
+		&i.FileID,
+		&i.Slug,
+		&i.ShareType,
+		&i.PasswordHash,
+		&i.ExpiresAt,
+		&i.MaxViews,
+		&i.ViewCount,
+		&i.CreatedBy,
+		&i.CreatedAt,
+		&i.FolderID,
 	)
 	return i, err
 }
 
 const getShare = `-- name: GetShare :one
-SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares WHERE id = $1
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id FROM shares WHERE id = $1
 `
 
 func (q *Queries) GetShare(ctx context.Context, id pgtype.UUID) (Share, error) {
@@ -91,12 +157,13 @@ func (q *Queries) GetShare(ctx context.Context, id pgtype.UUID) (Share, error) {
 		&i.ViewCount,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.FolderID,
 	)
 	return i, err
 }
 
 const getShareBySlug = `-- name: GetShareBySlug :one
-SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at FROM shares WHERE slug = $1
+SELECT id, file_id, slug, share_type, password_hash, expires_at, max_views, view_count, created_by, created_at, folder_id FROM shares WHERE slug = $1
 `
 
 func (q *Queries) GetShareBySlug(ctx context.Context, slug string) (Share, error) {
@@ -113,6 +180,7 @@ func (q *Queries) GetShareBySlug(ctx context.Context, slug string) (Share, error
 		&i.ViewCount,
 		&i.CreatedBy,
 		&i.CreatedAt,
+		&i.FolderID,
 	)
 	return i, err
 }
@@ -127,9 +195,14 @@ func (q *Queries) IncrementShareViewCount(ctx context.Context, id pgtype.UUID) e
 }
 
 const listAllShares = `-- name: ListAllShares :many
-SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, s.folder_id,
+  COALESCE(f.name, fo.name) AS target_name,
+  CASE WHEN s.file_id IS NOT NULL THEN 'file' ELSE 'folder' END AS target_type,
+  COALESCE(f.status, 'active') AS target_status,
+  u.name AS creator_name
 FROM shares s
-JOIN files f ON f.id = s.file_id
+LEFT JOIN files f ON f.id = s.file_id
+LEFT JOIN folders fo ON fo.id = s.folder_id
 LEFT JOIN users u ON u.id = s.created_by
 ORDER BY s.created_at DESC
 `
@@ -145,8 +218,10 @@ type ListAllSharesRow struct {
 	ViewCount    int32              `json:"view_count"`
 	CreatedBy    pgtype.UUID        `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	FileName     string             `json:"file_name"`
-	FileStatus   string             `json:"file_status"`
+	FolderID     pgtype.UUID        `json:"folder_id"`
+	TargetName   string             `json:"target_name"`
+	TargetType   string             `json:"target_type"`
+	TargetStatus string             `json:"target_status"`
 	CreatorName  *string            `json:"creator_name"`
 }
 
@@ -170,8 +245,10 @@ func (q *Queries) ListAllShares(ctx context.Context) ([]ListAllSharesRow, error)
 			&i.ViewCount,
 			&i.CreatedBy,
 			&i.CreatedAt,
-			&i.FileName,
-			&i.FileStatus,
+			&i.FolderID,
+			&i.TargetName,
+			&i.TargetType,
+			&i.TargetStatus,
 			&i.CreatorName,
 		); err != nil {
 			return nil, err
@@ -185,9 +262,14 @@ func (q *Queries) ListAllShares(ctx context.Context) ([]ListAllSharesRow, error)
 }
 
 const listSharesByCreator = `-- name: ListSharesByCreator :many
-SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, f.name AS file_name, f.status AS file_status, u.name AS creator_name
+SELECT s.id, s.file_id, s.slug, s.share_type, s.password_hash, s.expires_at, s.max_views, s.view_count, s.created_by, s.created_at, s.folder_id,
+  COALESCE(f.name, fo.name) AS target_name,
+  CASE WHEN s.file_id IS NOT NULL THEN 'file' ELSE 'folder' END AS target_type,
+  COALESCE(f.status, 'active') AS target_status,
+  u.name AS creator_name
 FROM shares s
-JOIN files f ON f.id = s.file_id
+LEFT JOIN files f ON f.id = s.file_id
+LEFT JOIN folders fo ON fo.id = s.folder_id
 LEFT JOIN users u ON u.id = s.created_by
 WHERE s.created_by = $1
 ORDER BY s.created_at DESC
@@ -204,8 +286,10 @@ type ListSharesByCreatorRow struct {
 	ViewCount    int32              `json:"view_count"`
 	CreatedBy    pgtype.UUID        `json:"created_by"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	FileName     string             `json:"file_name"`
-	FileStatus   string             `json:"file_status"`
+	FolderID     pgtype.UUID        `json:"folder_id"`
+	TargetName   string             `json:"target_name"`
+	TargetType   string             `json:"target_type"`
+	TargetStatus string             `json:"target_status"`
 	CreatorName  *string            `json:"creator_name"`
 }
 
@@ -229,8 +313,10 @@ func (q *Queries) ListSharesByCreator(ctx context.Context, createdBy pgtype.UUID
 			&i.ViewCount,
 			&i.CreatedBy,
 			&i.CreatedAt,
-			&i.FileName,
-			&i.FileStatus,
+			&i.FolderID,
+			&i.TargetName,
+			&i.TargetType,
+			&i.TargetStatus,
 			&i.CreatorName,
 		); err != nil {
 			return nil, err

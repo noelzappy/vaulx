@@ -79,9 +79,9 @@ templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 				}
 			</script>
 			<script>
-				async function copyShareLink(fileID) {
+				async function vaulxCopyShare(endpoint) {
 					try {
-						const res = await fetch('/files/' + fileID + '/share', { method: 'POST' })
+						const res = await fetch(endpoint, { method: 'POST' })
 						if (!res.ok) throw new Error('share failed')
 						const { url } = await res.json()
 						await navigator.clipboard.writeText(window.location.origin + url)
@@ -93,6 +93,12 @@ templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 							detail: { message: 'Failed to create share link', type: 'error' }
 						}))
 					}
+				}
+				function copyShareLink(fileID) {
+					return vaulxCopyShare('/files/' + fileID + '/share')
+				}
+				function copyFolderShareLink(folderID) {
+					return vaulxCopyShare('/files/folders/' + folderID + '/share')
 				}
 			</script>
 		</body>

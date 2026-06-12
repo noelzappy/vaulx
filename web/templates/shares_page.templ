@@ -51,11 +51,16 @@ templ shareRow(s viewmodel.ShareView) {
 			style="opacity:.5;"
 		}
 	>
-		<td style="color:var(--text);font-weight:500;">{ s.FileName }</td>
+		<td style="color:var(--text);font-weight:500;">
+			{ s.FileName }
+			if s.TargetType == "folder" {
+				<span class="badge badge-editor" style="margin-left:6px;">Folder</span>
+			}
+		</td>
 		<td>
 			if s.Expired {
 				<span class="badge badge-inactive">Expired</span>
-			} else if !s.FileActive {
+			} else if s.TargetType == "file" && !s.FileActive {
 				<span class="badge badge-inactive">File deleted</span>
 			} else {
 				<button

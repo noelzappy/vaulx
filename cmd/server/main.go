@@ -85,8 +85,9 @@ func main() {
 		http.Redirect(w, r, "/files", http.StatusFound)
 	})
 
-	// Public share route — no auth required
+	// Public share routes — no auth required
 	r.Get("/s/{slug}", shareHandler.ResolveShare)
+	r.Get("/s/{slug}/file/{fileID}", shareHandler.SharedFileDownload)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
@@ -95,6 +96,7 @@ func main() {
 		r.Post("/files/folders", filesHandler.CreateFolder)
 		r.Delete("/files/folders/{folderID}", filesHandler.DeleteFolder)
 		r.Patch("/files/folders/{folderID}", filesHandler.RenameFolder)
+		r.Post("/files/folders/{folderID}/share", shareHandler.CreateFolderShare)
 
 		// Search + download — registered BEFORE /files/{folderID} to avoid wildcard swallowing
 		r.Get("/files/search", filesHandler.Search)
