@@ -145,3 +145,116 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 	_ = h.queries.IncrementShareViewCount(r.Context(), share.ID)
 	http.Redirect(w, r, downloadURL, http.StatusFound)
 }
+
+func shareViewFrom(id, fileName, fileStatus, slug string, creatorName *string, createdAt, expiresAt pgtype.Timestamptz, viewCount int32) viewmodel.ShareView {
+	creator := ""
+	if creatorName != nil {
+		creator = *creatorName
+	}
+	expires := "Never"
+	expired := false
+	if expiresAt.Valid {
+		expires = expiresAt.Time.Format("Jan 2, 2006")
+		expired = time.Now().UTC().After(expiresAt.Time)
+	}
+	return viewmodel.ShareView{
+		ID:          id,
+		FileName:    fileName,
+		FileActive:  fileStatus == "active",
+		Slug:        slug,
+		CreatorName: creator,
+		Created:     createdAt.Time.Format("Jan 2, 2006"),
+		Expires:     expires,
+		Expired:     expired,
+		ViewCount:   viewCount,
+	}
+}
+
+// GET /shares — share management. Admin sees all shares; editors see their own.
+func (h *ShareHandler) SharesPage(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+		return
+	}
+	if !auth.CanEdit(user) {
+		http.Redirect(w, r, "/files", http.StatusFound)
+		return
+	}
+
+	var views []viewmodel.ShareView
+	if user.Role == "admin" {
+		rows, err := h.queries.ListAllShares(r.Context())
+		if err != nil {
+			http.Error(w, "failed to list shares", http.StatusInternalServerError)
+			return
+		}
+		views = make([]viewmodel.ShareView, 0, len(rows))
+		for _, s := range rows {
+			views = append(views, shareViewFrom(s.ID.String(), s.FileName, s.FileStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
+		}
+	} else {
+		userUUID, err := viewmodel.UUIDFromString(user.ID)
+		if err != nil {
+			http.Error(w, "internal error", http.StatusInternalServerError)
+			return
+		}
+		rows, err := h.queries.ListSharesByCreator(r.Context(), userUUID)
+		if err != nil {
+			http.Error(w, "failed to list shares", http.StatusInternalServerError)
+			return
+		}
+		views = make([]viewmodel.ShareView, 0, len(rows))
+		for _, s := range rows {
+			views = append(views, shareViewFrom(s.ID.String(), s.FileName, s.FileStatus, s.Slug, s.CreatorName, s.CreatedAt, s.ExpiresAt, s.ViewCount))
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.SharesPage(views, viewmodel.UserView{
+		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
+	}).Render(r.Context(), w)
+}
+
+// DELETE /shares/{shareID} — revoke a share link. Admin or the share's creator.
+func (h *ShareHandler) RevokeShare(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || !auth.CanEdit(user) {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	shareUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "shareID"))
+	if err != nil {
+		http.Error(w, "invalid share id", http.StatusBadRequest)
+		return
+	}
+
+	share, err := h.queries.GetShare(r.Context(), shareUUID)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if user.Role != "admin" && share.CreatedBy.String() != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	if err := h.queries.RevokeShare(r.Context(), shareUUID); err != nil {
+		http.Error(w, "failed to revoke share", http.StatusInternalServerError)
+		return
+	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "share"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "share.revoke",
+		ResourceType: &resourceType,
+		ResourceID:   shareUUID,
+	})
+
+	w.Header().Set("HX-Trigger", `{"showToast":{"message":"Share link revoked","type":"success"}}`)
+	w.WriteHeader(http.StatusOK)
+}

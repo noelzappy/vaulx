@@ -109,6 +109,10 @@ func main() {
 		r.Patch("/files/{fileID}/folder", filesHandler.MoveFile)
 		r.Post("/files/{fileID}/share", shareHandler.CreateShare)
 
+		// Share management
+		r.Get("/shares", shareHandler.SharesPage)
+		r.Delete("/shares/{shareID}", shareHandler.RevokeShare)
+
 		// Upload
 		r.Post("/api/upload/init", uploadHandler.InitUpload)
 		r.Post("/api/upload/confirm/{fileID}", uploadHandler.ConfirmUpload)

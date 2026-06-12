@@ -255,3 +255,15 @@ type TrashItemView struct {
 	UploaderName string
 	Date         string
 }
+
+type ShareView struct {
+	ID          string
+	FileName    string
+	FileActive  bool
+	Slug        string
+	CreatorName string
+	Created     string
+	Expires     string
+	Expired     bool
+	ViewCount   int32
+}

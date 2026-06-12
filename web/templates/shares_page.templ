@@ -1,0 +1,82 @@
+package templates
+
+import (
+	"fmt"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
+
+templ SharesPage(shares []viewmodel.ShareView, currentUser viewmodel.UserView) {
+	@Layout("Shared links", currentUser, false) {
+		<div id="shares-content">
+			<div class="toolbar" style="margin-bottom:24px;">
+				<h1 style="font-size:18px;font-weight:600;">Shared links</h1>
+			</div>
+			if len(shares) == 0 {
+				<div class="empty-state" style="padding:60px 20px;text-align:center;">
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;opacity:.3;margin-bottom:12px;">
+						<path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"></path>
+					</svg>
+					<p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">No share links yet</p>
+					<p style="font-size:12.5px;color:var(--text-muted);">Right-click a file and choose “Copy link” to create one.</p>
+				</div>
+			} else {
+				<div class="card" style="padding:0;overflow:hidden;">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>File</th>
+								<th>Link</th>
+								<th>Created by</th>
+								<th>Created</th>
+								<th>Expires</th>
+								<th>Views</th>
+								<th>Actions</th>
+							</tr>
+						</thead>
+						<tbody>
+							for _, s := range shares {
+								@shareRow(s)
+							}
+						</tbody>
+					</table>
+				</div>
+			}
+		</div>
+	}
+}
+
+templ shareRow(s viewmodel.ShareView) {
+	<tr
+		if s.Expired || !s.FileActive {
+			style="opacity:.5;"
+		}
+	>
+		<td style="color:var(--text);font-weight:500;">{ s.FileName }</td>
+		<td>
+			if s.Expired {
+				<span class="badge badge-inactive">Expired</span>
+			} else if !s.FileActive {
+				<span class="badge badge-inactive">File deleted</span>
+			} else {
+				<button
+					class="card-btn"
+					data-slug={ s.Slug }
+					onclick="navigator.clipboard.writeText(window.location.origin + '/s/' + this.dataset.slug).then(() => window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Link copied!', type: 'success' } })))"
+				>Copy link</button>
+			}
+		</td>
+		<td>{ s.CreatorName }</td>
+		<td>{ s.Created }</td>
+		<td>{ s.Expires }</td>
+		<td>{ fmt.Sprintf("%d", s.ViewCount) }</td>
+		<td>
+			<button
+				class="card-btn card-btn-danger"
+				hx-delete={ "/shares/" + s.ID }
+				hx-confirm={ "Revoke the share link for \"" + s.FileName + "\"? Anyone with the link will lose access." }
+				hx-target="closest tr"
+				hx-swap="outerHTML swap:0.3s"
+			>Revoke</button>
+		</td>
+	</tr>
+}
