@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 var (
@@ -42,4 +43,24 @@ func Connect(ctx context.Context) error {
 	Client = s3.NewFromConfig(cfg)
 	PresignClient = s3.NewPresignClient(Client)
 	return nil
+}
+
+// EnsureCORS sets a permissive CORS policy on the bucket so browsers can PUT
+// parts directly to presigned S3 URLs from any origin.
+func EnsureCORS(ctx context.Context) error {
+	_, err := Client.PutBucketCors(ctx, &s3.PutBucketCorsInput{
+		Bucket: aws.String(Bucket),
+		CORSConfiguration: &types.CORSConfiguration{
+			CORSRules: []types.CORSRule{
+				{
+					AllowedOrigins: []string{"*"},
+					AllowedMethods: []string{"GET", "PUT", "POST", "DELETE", "HEAD"},
+					AllowedHeaders: []string{"*"},
+					ExposeHeaders:  []string{"ETag"},
+					MaxAgeSeconds:  aws.Int32(3000),
+				},
+			},
+		},
+	})
+	return err
 }

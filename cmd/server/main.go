@@ -38,6 +38,11 @@ func main() {
 	if err := storage.Connect(ctx); err != nil {
 		log.Fatalf("fatal: cannot connect to S3 storage: %v", err)
 	}
+	if err := storage.EnsureCORS(ctx); err != nil {
+		log.Printf("warning: could not set bucket CORS policy: %v", err)
+	} else {
+		log.Println("storage: CORS policy applied")
+	}
 
 	queries := db.New(db.DB)
 	seed.AdminUser(ctx, queries)
