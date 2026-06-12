@@ -31,9 +31,16 @@ function initUppy(targetFolderId) {
 
   uppy.use(Uppy.AwsS3, {
     companionUrl: window.location.origin,
+    limit: 4,
     shouldUseMultipart: function(file) {
       console.log('[vaulx-uppy] shouldUseMultipart →', true, 'file:', file.name, file.size, 'bytes');
       return true;
+    },
+    getChunkSize: function(file) {
+      var chunk = 50 * 1024 * 1024; // 50 MB — keeps part count low for large files
+      var parts = Math.ceil(file.size / chunk);
+      console.log('[vaulx-uppy] getChunkSize: 50MB chunks → ~' + parts + ' parts for ' + file.name);
+      return chunk;
     },
 
     createMultipartUpload: async function(file) {
