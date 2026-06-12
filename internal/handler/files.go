@@ -528,6 +528,32 @@ func (h *FilesHandler) PreviewFile(w http.ResponseWriter, r *http.Request) {
 	_ = templates.PreviewPanel(file, uploaderName, presignedURL).Render(r.Context(), w)
 }
 
+// GET /upload — dedicated upload page with a destination folder picker.
+func (h *FilesHandler) UploadPage(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Redirect(w, r, "/auth/login", http.StatusFound)
+		return
+	}
+	if !auth.CanEdit(user) {
+		http.Redirect(w, r, "/files", http.StatusFound)
+		return
+	}
+	dbFolders, err := h.queries.ListAllFolders(r.Context())
+	if err != nil {
+		http.Error(w, "failed to list folders", http.StatusInternalServerError)
+		return
+	}
+	folders := make([]viewmodel.FolderView, len(dbFolders))
+	for i, f := range dbFolders {
+		folders[i] = viewmodel.FolderView{ID: f.ID.String(), Name: f.Name}
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.UploadPage(folders, viewmodel.UserView{
+		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
+	}).Render(r.Context(), w)
+}
+
 // GET /api/folders — returns all folders as JSON for the move-to-folder picker.
 func (h *FilesHandler) ListFoldersJSON(w http.ResponseWriter, r *http.Request) {
 	if _, ok := auth.GetCurrentUser(r.Context()); !ok {

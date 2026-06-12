@@ -91,6 +91,7 @@ func main() {
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
 		r.Get("/files", filesHandler.List)
+		r.Get("/upload", filesHandler.UploadPage)
 		r.Post("/files/folders", filesHandler.CreateFolder)
 		r.Delete("/files/folders/{folderID}", filesHandler.DeleteFolder)
 		r.Patch("/files/folders/{folderID}", filesHandler.RenameFolder)

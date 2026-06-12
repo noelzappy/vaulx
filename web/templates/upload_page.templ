@@ -1,0 +1,36 @@
+package templates
+
+import "github.com/noelzappy/vaulx/internal/viewmodel"
+
+templ UploadPage(folders []viewmodel.FolderView, user viewmodel.UserView) {
+	@Layout("Upload", user, true) {
+		<div class="upload-page">
+			<div class="toolbar">
+				<div class="toolbar-title">Upload files</div>
+			</div>
+			<p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">
+				Drag and drop files below, or click to browse. Files up to several gigabytes are supported.
+			</p>
+			<div class="form-group" style="max-width:320px;">
+				<label class="form-label" for="upload-dest">Destination folder</label>
+				<select
+					id="upload-dest"
+					class="input"
+					onchange="initUppy(this.value)"
+				>
+					<option value="">Root (no folder)</option>
+					for _, f := range folders {
+						<option value={ f.ID }>{ f.Name }</option>
+					}
+				</select>
+			</div>
+			<div id="uppy-container" style="margin-top:16px;"></div>
+			<script>
+				(function() {
+					var sel = document.getElementById('upload-dest');
+					if (typeof initUppy === 'function') { initUppy(sel ? sel.value : ''); }
+				})();
+			</script>
+		</div>
+	}
+}
