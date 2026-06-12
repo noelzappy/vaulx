@@ -96,7 +96,8 @@ func main() {
 		r.Delete("/files/folders/{folderID}", filesHandler.DeleteFolder)
 		r.Patch("/files/folders/{folderID}", filesHandler.RenameFolder)
 
-		// Download — registered BEFORE /files/{folderID} to avoid wildcard swallowing
+		// Search + download — registered BEFORE /files/{folderID} to avoid wildcard swallowing
+		r.Get("/files/search", filesHandler.Search)
 		r.Get("/files/{fileID}/download", downloadHandler.Download)
 
 		// Folder listing wildcard — must come after the download route

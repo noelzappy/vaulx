@@ -17,8 +17,9 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 			<div>
 				@Breadcrumb(data.Breadcrumbs)
 			</div>
-			if user.Role == "admin" || user.Role == "editor" {
-				<div style="display:flex;gap:8px;">
+			<div style="display:flex;gap:8px;align-items:center;">
+				@searchBox("")
+				if user.Role == "admin" || user.Role == "editor" {
 					<button
 						class="btn btn-ghost"
 						onclick="document.getElementById('new-folder-form').style.display='flex'"
@@ -28,8 +29,8 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 						</svg>
 						New Folder
 					</button>
-				</div>
-			}
+				}
+			</div>
 		</div>
 		if user.Role == "admin" || user.Role == "editor" {
 			<div id="uppy-container" data-folder-id={ data.FolderID } style="margin-bottom:20px;"></div>
@@ -145,4 +146,76 @@ func currentBrowserURL(data viewmodel.FileBrowserData) string {
 		return "/files/" + data.FolderID
 	}
 	return "/files"
+}
+
+templ searchBox(q string) {
+	<input
+		class="input search-box"
+		type="search"
+		name="q"
+		placeholder="Search files…"
+		value={ q }
+		hx-get="/files/search"
+		hx-trigger="input changed delay:300ms, search"
+		hx-target="#browser-content"
+		hx-swap="outerHTML"
+		hx-push-url="true"
+	/>
+}
+
+templ SearchPage(q string, folders []viewmodel.FolderView, files []viewmodel.FileView, user viewmodel.UserView) {
+	@Layout("Search", user, false) {
+		@SearchResults(q, folders, files, user)
+	}
+}
+
+templ SearchResults(q string, folders []viewmodel.FolderView, files []viewmodel.FileView, user viewmodel.UserView) {
+	<div id="browser-content">
+		<div class="toolbar">
+			<nav class="breadcrumb">
+				<a
+					href="/files"
+					hx-get="/files"
+					hx-target="#browser-content"
+					hx-swap="outerHTML"
+					hx-push-url="/files"
+				>My Files</a>
+				<span class="breadcrumb-sep">/</span>
+				<span class="breadcrumb-current">Search</span>
+			</nav>
+			<div style="display:flex;gap:8px;align-items:center;">
+				@searchBox(q)
+			</div>
+		</div>
+		<p class="section-heading">Results for “{ q }”</p>
+		if len(folders) == 0 && len(files) == 0 {
+			<div class="empty-state" style="padding:60px 20px;text-align:center;">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="currentColor" style="width:40px;height:40px;opacity:.3;margin-bottom:12px;">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"></path>
+				</svg>
+				<p style="font-size:14px;font-weight:500;color:var(--text);margin-bottom:6px;">No matches</p>
+				<p style="font-size:12.5px;color:var(--text-muted);">Nothing named like “{ q }” was found.</p>
+			</div>
+		} else {
+			if len(folders) > 0 {
+				<p class="section-heading">Folders</p>
+				<div class="file-grid">
+					for _, folder := range folders {
+						@FolderCard(folder)
+					}
+				</div>
+			}
+			if len(files) > 0 {
+				<p class="section-heading">Files</p>
+				<div class="file-grid">
+					for _, file := range files {
+						@FileCard(file,
+							user.Role == "admin" || (user.Role == "editor" && file.UploaderID == user.ID),
+							user.Role == "admin",
+						)
+					}
+				</div>
+			}
+		}
+	</div>
 }

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -93,6 +94,42 @@ func (h *FilesHandler) List(w http.ResponseWriter, r *http.Request) {
 	renderFileBrowser(w, r, data, viewmodel.UserView{
 		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
 	})
+}
+
+// GET /files/search?q= — name search across all active files and folders.
+func (h *FilesHandler) Search(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if q == "" {
+		h.List(w, r) // empty query falls back to the normal root listing
+		return
+	}
+	ctx := r.Context()
+
+	dbFiles, err := h.queries.SearchFiles(ctx, &q)
+	if err != nil {
+		http.Error(w, "search failed", http.StatusInternalServerError)
+		return
+	}
+	dbFolders, err := h.queries.SearchFolders(ctx, &q)
+	if err != nil {
+		http.Error(w, "search failed", http.StatusInternalServerError)
+		return
+	}
+
+	folders, files := h.buildViews(ctx, dbFolders, dbFiles)
+	uv := viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	if r.Header.Get("HX-Request") == "true" {
+		_ = templates.SearchResults(q, folders, files, uv).Render(ctx, w)
+		return
+	}
+	_ = templates.SearchPage(q, folders, files, uv).Render(ctx, w)
 }
 
 // GET /files/{folderID} — folder contents.
