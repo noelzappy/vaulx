@@ -16,8 +16,9 @@ function initUppy(targetFolderId) {
     height: 320,
   });
 
-  uppy.use(Uppy.AwsS3Multipart, {
-    companionUrl: window.location.origin,
+  // Uppy.AwsS3 (v3 unified plugin) supports custom backends without companion.
+  // All uploads go through multipart so we only need one code path.
+  uppy.use(Uppy.AwsS3, {
     shouldUseMultipart: function() { return true; },
 
     createMultipartUpload: async function(file) {
@@ -30,7 +31,7 @@ function initUppy(targetFolderId) {
           folderId: targetFolderId || '',
         }),
       });
-      if (!res.ok) throw new Error('createMultipartUpload failed');
+      if (!res.ok) throw new Error('createMultipartUpload failed: ' + res.status);
       var data = await res.json();
       uppy.setFileMeta(file.id, { fileId: data.fileId });
       return data;
@@ -39,14 +40,14 @@ function initUppy(targetFolderId) {
     listParts: async function(file, _ref) {
       var uploadId = _ref.uploadId, key = _ref.key;
       var res = await fetch('/api/s3/multipart/' + uploadId + '?key=' + encodeURIComponent(key));
-      if (!res.ok) throw new Error('listParts failed');
+      if (!res.ok) throw new Error('listParts failed: ' + res.status);
       return res.json();
     },
 
     signPart: async function(file, _ref) {
       var uploadId = _ref.uploadId, partNumber = _ref.partNumber, key = _ref.key;
       var res = await fetch('/api/s3/multipart/' + uploadId + '/' + partNumber + '?key=' + encodeURIComponent(key));
-      if (!res.ok) throw new Error('signPart failed');
+      if (!res.ok) throw new Error('signPart failed: ' + res.status);
       var data = await res.json();
       return { url: data.url };
     },
@@ -64,7 +65,7 @@ function initUppy(targetFolderId) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ key: key, fileId: fileId, parts: parts }),
       });
-      if (!res.ok) throw new Error('completeMultipartUpload failed');
+      if (!res.ok) throw new Error('completeMultipartUpload failed: ' + res.status);
       return res.json();
     },
   });
