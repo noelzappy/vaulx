@@ -7,57 +7,79 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		class="card"
 		data-file-name={ file.Name }
 		data-file-id={ file.ID }
-		x-data="{ editing: false, menuOpen: false, moving: false, folders: [] }"
+		x-data="{ editing: false, menuOpen: false, menuX: 0, menuY: 0, moving: false, folders: [] }"
 		title={ file.Name }
-		@contextmenu.prevent="menuOpen = true"
-		@touchstart.passive="$el._lpt = setTimeout(() => { menuOpen = true; navigator.vibrate && navigator.vibrate(30) }, 500)"
+		@contextmenu.prevent="
+			const mw = 192, mh = canEdit ? 280 : 120;
+			menuX = ($event.clientX + mw > window.innerWidth) ? $event.clientX - mw : $event.clientX;
+			menuY = ($event.clientY + mh > window.innerHeight) ? $event.clientY - mh : $event.clientY;
+			menuOpen = true
+		"
+		@touchstart.passive="$el._lpt = setTimeout(() => {
+			const r = $el.getBoundingClientRect();
+			menuX = Math.min(r.left + 20, window.innerWidth - 196);
+			menuY = Math.min(r.bottom + 4, window.innerHeight - 120);
+			menuOpen = true;
+			navigator.vibrate && navigator.vibrate(30)
+		}, 500)"
 		@touchend.passive="clearTimeout($el._lpt)"
 		@touchmove.passive="clearTimeout($el._lpt)"
 		@keydown.escape.window="menuOpen = false; moving = false"
-		@click.outside="menuOpen = false; moving = false"
 		hx-get={ string(templ.SafeURL("/api/file/" + file.ID + "/preview")) }
 		hx-target="#preview-panel"
 		hx-swap="innerHTML"
-		hx-trigger="click[!event.target.closest('.card-btn') && !event.target.closest('.card-move-folder') && !event.target.closest('form') && !event.target.closest('input') && !menuOpen && !editing]"
+		hx-trigger="click[!event.target.closest('.ctx-menu') && !event.target.closest('form') && !event.target.closest('input') && !menuOpen && !editing]"
 	>
+		<!-- Floating context menu — position:fixed so it escapes card boundaries -->
 		<div
-			class="card-actions"
+			class="ctx-menu"
 			x-show="menuOpen && !editing"
 			x-cloak
-			@click.self="menuOpen = false; moving = false"
+			:style="`left:${menuX}px;top:${menuY}px`"
+			@click.outside="menuOpen = false; moving = false"
+			x-transition.duration.100ms
 		>
-			<div class="card-actions-row">
-				<a
-					class="card-btn"
-					href={ templ.SafeURL("/files/" + file.ID + "/download") }
-					onclick="event.stopPropagation()"
-				>Download</a>
-				<button
-					class="card-btn"
-					data-file-id={ file.ID }
-					onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId); $dispatch('close-menu')"
-					@close-menu.window="menuOpen = false"
-				>Share</button>
-				if canEdit {
-					<button
-						class="card-btn"
-						x-on:click.stop="editing = true; menuOpen = false"
-					>Rename</button>
-					<button
-						class="card-btn"
-						x-on:click.stop="
-							moving = !moving;
-							if (moving && folders.length === 0) {
-								fetch('/api/folders').then(r => r.json()).then(d => { folders = d })
-							}
-						"
-					>Move to…</button>
-				}
-			</div>
+			<a
+				class="ctx-item"
+				href={ templ.SafeURL("/files/" + file.ID + "/download") }
+				onclick="event.stopPropagation()"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+				Download
+			</a>
+			<button
+				class="ctx-item"
+				data-file-id={ file.ID }
+				onclick="event.stopPropagation(); copyShareLink(this.dataset.fileId)"
+				@close-menu.window="menuOpen = false"
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"/></svg>
+				Copy link
+			</button>
 			if canEdit {
-				<div class="card-move-picker" x-show="moving" x-cloak onclick="event.stopPropagation()">
+				<div class="ctx-sep"></div>
+				<button
+					class="ctx-item"
+					x-on:click.stop="editing = true; menuOpen = false"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"/></svg>
+					Rename
+				</button>
+				<button
+					class="ctx-item"
+					x-on:click.stop="
+						moving = !moving;
+						if (moving && folders.length === 0) {
+							fetch('/api/folders').then(r => r.json()).then(d => { folders = d })
+						}
+					"
+				>
+					<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 0 1 4.5 9.75h15A2.25 2.25 0 0 1 21.75 12v.75m-8.69-6.44-2.12-2.12a1.5 1.5 0 0 0-1.061-.44H4.5A2.25 2.25 0 0 0 2.25 6v12a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9a2.25 2.25 0 0 0-2.25-2.25h-5.379a1.5 1.5 0 0 1-1.06-.44Z"/></svg>
+					<span x-text="moving ? 'Pick a folder ▾' : 'Move to…'"></span>
+				</button>
+				<div class="ctx-submenu" x-show="moving" x-cloak onclick="event.stopPropagation()">
 					<button
-						class="card-move-folder"
+						class="ctx-folder-btn"
 						x-on:click.stop="
 							const fid = $el.closest('.card').dataset.fileId;
 							htmx.ajax('PATCH', '/files/' + fid + '/folder', {
@@ -71,7 +93,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 					>⬆ Root (no folder)</button>
 					<template x-for="f in folders" :key="f.id">
 						<button
-							class="card-move-folder"
+							class="ctx-folder-btn"
 							x-text="'📁 ' + f.name"
 							x-on:click.stop="
 								const fid = $el.closest('.card').dataset.fileId;
@@ -91,30 +113,37 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 				</div>
 			}
 			if canEdit || canHardDelete {
-				<div class="card-actions-row">
-					if canEdit {
-						<button
-							class="card-btn card-btn-danger"
-							hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
-							hx-confirm={ "Delete \"" + file.Name + "\"? The file will be hidden but can be recovered by an admin." }
-							hx-target="closest .card"
-							hx-swap="outerHTML swap:0.3s"
-							onclick="event.stopPropagation()"
-						>Delete</button>
-					}
-					if canHardDelete {
-						<button
-							class="card-btn card-btn-danger"
-							hx-delete={ string(templ.SafeURL("/files/" + file.ID + "?permanent=true")) }
-							hx-confirm={ "Permanently delete \"" + file.Name + "\"? This CANNOT be undone — the file will be removed from storage." }
-							hx-target="closest .card"
-							hx-swap="outerHTML swap:0.3s"
-							onclick="event.stopPropagation()"
-						>Delete Permanently</button>
-					}
-				</div>
+				<div class="ctx-sep"></div>
+				if canEdit {
+					<button
+						class="ctx-item ctx-item-danger"
+						hx-delete={ string(templ.SafeURL("/files/" + file.ID)) }
+						hx-confirm={ "Delete \"" + file.Name + "\"? The file will be hidden but can be recovered by an admin." }
+						hx-target="closest .card"
+						hx-swap="outerHTML swap:0.3s"
+						onclick="event.stopPropagation()"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+						Delete
+					</button>
+				}
+				if canHardDelete {
+					<button
+						class="ctx-item ctx-item-danger"
+						hx-delete={ string(templ.SafeURL("/files/" + file.ID + "?permanent=true")) }
+						hx-confirm={ "Permanently delete \"" + file.Name + "\"? This CANNOT be undone — the file will be removed from storage." }
+						hx-target="closest .card"
+						hx-swap="outerHTML swap:0.3s"
+						onclick="event.stopPropagation()"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"/></svg>
+						Delete permanently
+					</button>
+				}
 			}
 		</div>
+
+		<!-- Card content -->
 		<div class="card-icon" x-show="!editing">
 			@fileTypeIcon(file.MimeType)
 		</div>
@@ -136,7 +165,6 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 				<input
 					class="input file-rename-input"
 					name="name"
-					x-ref="fileRenameInput"
 					x-bind:value="$el.closest('.card').dataset.fileName"
 					x-on:keydown.escape.prevent="editing = false"
 					placeholder="File name"
