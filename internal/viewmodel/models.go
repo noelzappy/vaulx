@@ -247,3 +247,11 @@ func AuditLogViewFromRow(
 		CreatedAt:    ts,
 	}
 }
+
+type TrashItemView struct {
+	ID           string
+	Name         string
+	SizeHuman    string
+	UploaderName string
+	Date         string
+}

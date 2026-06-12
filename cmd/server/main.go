@@ -132,6 +132,8 @@ func main() {
 			r.Post("/users", adminHandler.CreateUser)
 			r.Patch("/users/{userID}", adminHandler.UpdateUser)
 			r.Get("/audit", adminHandler.AuditLog)
+			r.Get("/trash", adminHandler.Trash)
+			r.Post("/trash/{fileID}/restore", adminHandler.RestoreFile)
 			r.Get("/permissions", permissionHandler.List)
 			r.Post("/permissions", permissionHandler.Grant)
 			r.Delete("/permissions/{permID}", permissionHandler.Revoke)

@@ -223,3 +223,74 @@ func (h *AdminHandler) AuditLog(w http.ResponseWriter, r *http.Request) {
 		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
 	}).Render(r.Context(), w)
 }
+
+// GET /admin/trash — soft-deleted files, admin-only.
+func (h *AdminHandler) Trash(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
+		w.WriteHeader(http.StatusForbidden)
+		_ = templates.AuthErrorPage(403, "Access denied",
+			"You don't have permission to view this. Contact your admin to request access.",
+			viewmodel.UserView{ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role},
+		).Render(r.Context(), w)
+		return
+	}
+
+	rows, err := h.queries.ListDeletedFiles(r.Context())
+	if err != nil {
+		http.Error(w, "failed to list trash", http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]viewmodel.TrashItemView, 0, len(rows))
+	for _, f := range rows {
+		uploader := ""
+		if f.UploaderName != nil {
+			uploader = *f.UploaderName
+		}
+		items = append(items, viewmodel.TrashItemView{
+			ID:           f.ID.String(),
+			Name:         f.Name,
+			SizeHuman:    viewmodel.HumanSize(f.SizeBytes),
+			UploaderName: uploader,
+			Date:         f.CreatedAt.Time.Format("Jan 2, 2006"),
+		})
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.AdminTrashPage(items, viewmodel.UserView{
+		ID: user.ID, Email: user.Email, Name: user.Name, Role: user.Role,
+	}).Render(r.Context(), w)
+}
+
+// POST /admin/trash/{fileID}/restore — admin-only.
+func (h *AdminHandler) RestoreFile(w http.ResponseWriter, r *http.Request) {
+	user, ok := auth.GetCurrentUser(r.Context())
+	if !ok || user.Role != "admin" {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+
+	if _, err := h.queries.RestoreFile(r.Context(), fileUUID); err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	userUUID, _ := viewmodel.UUIDFromString(user.ID)
+	resourceType := "file"
+	_, _ = h.queries.CreateAuditLog(r.Context(), db.CreateAuditLogParams{
+		UserID:       userUUID,
+		Action:       "file.restore",
+		ResourceType: &resourceType,
+		ResourceID:   fileUUID,
+	})
+
+	w.Header().Set("HX-Trigger", `{"showToast":{"message":"File restored","type":"success"}}`)
+	w.WriteHeader(http.StatusOK)
+}
