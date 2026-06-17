@@ -103,7 +103,7 @@ button{cursor:pointer;font:inherit}
 .form-group{margin-bottom:16px}
 .form-label{display:block;font-size:12.5px;font-weight:500;color:var(--text-muted);margin-bottom:6px;letter-spacing:.02em}
 .error-msg{background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.25);border-radius:var(--radius-sm);color:var(--danger);padding:9px 12px;font-size:13px;margin-bottom:16px}
-.success-banner{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);border-radius:var(--radius-sm);color:#3fb950;padding:9px 12px;font-size:13px;margin-bottom:16px}
+.success-banner{background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.25);border-radius:var(--radius-sm);color:var(--success);padding:9px 12px;font-size:13px;margin-bottom:16px}
 
 /* Toasts */
 .toast-container{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px}

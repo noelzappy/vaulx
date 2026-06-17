@@ -120,3 +120,39 @@ func TestProfilePage_SuccessMessage(t *testing.T) {
 		t.Errorf("expected success message in response body, got: %s", body[:min(200, len(body))])
 	}
 }
+
+func TestProfilePage_SuccessMessage_Password(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/profile?success=password", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.Page(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+	if !strings.Contains(rr.Body.String(), "Password updated successfully") {
+		t.Errorf("expected password success message in response body")
+	}
+}
+
+func TestProfilePage_UnknownSuccessParam(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/profile?success=xss<script>", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.Page(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+	if strings.Contains(rr.Body.String(), "success-banner") {
+		t.Errorf("expected no success banner for unknown param, but got one")
+	}
+}
