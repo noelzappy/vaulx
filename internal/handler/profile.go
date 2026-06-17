@@ -39,6 +39,11 @@ func (h *ProfileHandler) UpdateName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
+		return
+	}
+
 	name := strings.TrimSpace(r.FormValue("name"))
 	if name == "" {
 		user := viewmodel.UserView{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role}
@@ -84,6 +89,11 @@ func (h *ProfileHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) 
 	u, ok := auth.GetCurrentUser(r.Context())
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 

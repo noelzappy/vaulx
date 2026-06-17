@@ -64,8 +64,40 @@ func TestUpdatePassword_MismatchedNewPasswords(t *testing.T) {
 
 	h.UpdatePassword(rr, req)
 
-	// Should re-render the profile page with an error (200) or 400
-	if rr.Code != http.StatusBadRequest && rr.Code != http.StatusOK {
-		t.Errorf("expected 400 or 200, got %d", rr.Code)
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", rr.Code)
+	}
+}
+
+func TestUpdateName_EmptyName(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	req := httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader("name=   "))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.UpdateName(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for empty name, got %d", rr.Code)
+	}
+}
+
+func TestUpdatePassword_TooShort(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	req := httptest.NewRequest(http.MethodPost, "/profile/password",
+		strings.NewReader("current_password=old&new_password=short&confirm_password=short"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.UpdatePassword(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for short password, got %d", rr.Code)
 	}
 }
