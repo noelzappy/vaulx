@@ -68,6 +68,7 @@ func main() {
 	shareHandler      := handler.NewShareHandler(queries)
 	permissionHandler := handler.NewPermissionHandler(queries)
 	multipartHandler  := handler.NewMultipartHandler(queries)
+	profileHandler    := handler.NewProfileHandler(queries, sessionStore)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -114,6 +115,11 @@ func main() {
 		// Share management
 		r.Get("/shares", shareHandler.SharesPage)
 		r.Delete("/shares/{shareID}", shareHandler.RevokeShare)
+
+		// Profile
+		r.Get("/profile", profileHandler.Page)
+		r.Post("/profile", profileHandler.UpdateName)
+		r.Post("/profile/password", profileHandler.UpdatePassword)
 
 		// Upload
 		r.Post("/api/upload/init", uploadHandler.InitUpload)
