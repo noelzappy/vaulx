@@ -22,3 +22,9 @@ UPDATE users SET role = $1 WHERE id = $2 RETURNING *;
 
 -- name: DeactivateUser :one
 UPDATE users SET active = $1 WHERE id = $2 RETURNING *;
+
+-- name: UpdateUserName :one
+UPDATE users SET name = $1 WHERE id = $2 RETURNING *;
+
+-- name: UpdateUserPassword :one
+UPDATE users SET password_hash = $1 WHERE id = $2 RETURNING *;

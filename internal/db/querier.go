@@ -64,6 +64,8 @@ type Querier interface {
 	UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error)
 	UpdateFileSizeAndStatus(ctx context.Context, arg UpdateFileSizeAndStatusParams) (File, error)
 	UpdateFolderName(ctx context.Context, arg UpdateFolderNameParams) (Folder, error)
+	UpdateUserName(ctx context.Context, arg UpdateUserNameParams) (User, error)
+	UpdateUserPassword(ctx context.Context, arg UpdateUserPasswordParams) (User, error)
 	UpdateUserRole(ctx context.Context, arg UpdateUserRoleParams) (User, error)
 }
 
