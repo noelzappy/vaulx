@@ -139,6 +139,23 @@ func TestProfilePage_SuccessMessage_Password(t *testing.T) {
 	}
 }
 
+func TestUpdateName_TooLong(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	longName := strings.Repeat("a", 101)
+	req := httptest.NewRequest(http.MethodPost, "/profile", strings.NewReader("name="+longName))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.UpdateName(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for name > 100 chars, got %d", rr.Code)
+	}
+}
+
 func TestProfilePage_UnknownSuccessParam(t *testing.T) {
 	h := handler.NewProfileHandler(nil, nil)
 

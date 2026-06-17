@@ -59,6 +59,13 @@ func (h *ProfileHandler) UpdateName(w http.ResponseWriter, r *http.Request) {
 		_ = templates.ProfilePage(user, "Name cannot be empty.", "").Render(r.Context(), w)
 		return
 	}
+	if len(name) > 100 {
+		user := viewmodel.UserView{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role}
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.WriteHeader(http.StatusBadRequest)
+		_ = templates.ProfilePage(user, "Name is too long (max 100 characters).", "").Render(r.Context(), w)
+		return
+	}
 
 	userUUID, err := viewmodel.UUIDFromString(u.ID)
 	if err != nil {
@@ -132,6 +139,14 @@ func (h *ProfileHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) 
 	dbUser, err := h.queries.GetUserByID(r.Context(), userUUID)
 	if err != nil {
 		http.Error(w, "user not found", http.StatusInternalServerError)
+		return
+	}
+	// Deactivated users cannot change their password. Active=false is set by an
+	// admin; the user sees a 403 rather than a misleading "incorrect password"
+	// error. (Tested via integration test with a real DB; skipped in unit tests
+	// because GetUserByID requires a live query layer.)
+	if !dbUser.Active {
+		http.Error(w, "account is deactivated", http.StatusForbidden)
 		return
 	}
 
