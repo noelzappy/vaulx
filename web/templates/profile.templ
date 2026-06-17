@@ -3,5 +3,81 @@ package templates
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
 templ ProfilePage(user viewmodel.UserView, errMsg string) {
-	<div>Profile stub</div>
+	@Layout("My Profile", user, false) {
+		<div style="max-width:520px;margin:0 auto;">
+			<h1 style="font-size:18px;font-weight:600;margin-bottom:24px;">My Profile</h1>
+
+			if errMsg != "" {
+				<div class="error-banner" style="margin-bottom:16px;">{ errMsg }</div>
+			}
+
+			<!-- Update display name -->
+			<div class="card" style="margin-bottom:20px;padding:20px 24px;">
+				<h2 style="font-size:14px;font-weight:600;margin-bottom:4px;">Display name</h2>
+				<p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">This name appears in the sidebar and on shared files.</p>
+				<form
+					hx-post="/profile"
+					hx-target="main"
+					hx-swap="innerHTML"
+					style="display:flex;flex-direction:column;gap:12px;"
+				>
+					<input
+						class="input"
+						type="text"
+						name="name"
+						value={ user.Name }
+						placeholder="Your name"
+						required
+						maxlength="100"
+						style="max-width:360px;"
+					/>
+					<div>
+						<button class="btn btn-primary" type="submit">Save name</button>
+					</div>
+				</form>
+			</div>
+
+			<!-- Change password -->
+			<div class="card" style="padding:20px 24px;">
+				<h2 style="font-size:14px;font-weight:600;margin-bottom:4px;">Change password</h2>
+				<p style="font-size:12.5px;color:var(--text-muted);margin-bottom:16px;">Choose a password at least 8 characters long.</p>
+				<form
+					hx-post="/profile/password"
+					hx-target="main"
+					hx-swap="innerHTML"
+					style="display:flex;flex-direction:column;gap:12px;"
+				>
+					<input
+						class="input"
+						type="password"
+						name="current_password"
+						placeholder="Current password"
+						required
+						style="max-width:360px;"
+					/>
+					<input
+						class="input"
+						type="password"
+						name="new_password"
+						placeholder="New password"
+						required
+						minlength="8"
+						style="max-width:360px;"
+					/>
+					<input
+						class="input"
+						type="password"
+						name="confirm_password"
+						placeholder="Confirm new password"
+						required
+						minlength="8"
+						style="max-width:360px;"
+					/>
+					<div>
+						<button class="btn btn-primary" type="submit">Update password</button>
+					</div>
+				</form>
+			</div>
+		</div>
+	}
 }
