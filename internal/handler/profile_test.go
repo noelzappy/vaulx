@@ -101,3 +101,22 @@ func TestUpdatePassword_TooShort(t *testing.T) {
 		t.Errorf("expected 400 for short password, got %d", rr.Code)
 	}
 }
+
+func TestProfilePage_SuccessMessage(t *testing.T) {
+	h := handler.NewProfileHandler(nil, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/profile?success=name", nil)
+	ctx := auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "u1", Role: "editor", Name: "Bob", Email: "bob@example.com"})
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.Page(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", rr.Code)
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "Display name updated") {
+		t.Errorf("expected success message in response body, got: %s", body[:min(200, len(body))])
+	}
+}

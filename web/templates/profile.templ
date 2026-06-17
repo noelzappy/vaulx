@@ -2,13 +2,16 @@ package templates
 
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
-templ ProfilePage(user viewmodel.UserView, errMsg string) {
+templ ProfilePage(user viewmodel.UserView, errMsg string, successMsg string) {
 	@Layout("My Profile", user, false) {
 		<div style="max-width:520px;margin:0 auto;">
 			<h1 style="font-size:18px;font-weight:600;margin-bottom:24px;">My Profile</h1>
 
 			if errMsg != "" {
 				<div class="error-msg">{ errMsg }</div>
+			}
+			if successMsg != "" {
+				<div class="success-banner">{ successMsg }</div>
 			}
 
 			<!-- Update display name -->

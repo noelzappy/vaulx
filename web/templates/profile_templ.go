@@ -10,7 +10,7 @@ import templruntime "github.com/a-h/templ/runtime"
 
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
-func ProfilePage(user viewmodel.UserView, errMsg string) templ.Component {
+func ProfilePage(user viewmodel.UserView, errMsg string, successMsg string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -66,20 +66,39 @@ func ProfilePage(user viewmodel.UserView, errMsg string) templ.Component {
 					return templ_7745c5c3_Err
 				}
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<!-- Update display name --><div class=\"card\" style=\"margin-bottom:20px;padding:20px 24px;\"><h2 style=\"font-size:14px;font-weight:600;margin-bottom:4px;\">Display name</h2><p style=\"font-size:12.5px;color:var(--text-muted);margin-bottom:16px;\">This name appears in the sidebar and on shared files.</p><form method=\"POST\" action=\"/profile\" style=\"display:flex;flex-direction:column;gap:12px;\"><input class=\"input\" type=\"text\" name=\"name\" value=\"")
+			if successMsg != "" {
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<div class=\"success-banner\">")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				var templ_7745c5c3_Var4 string
+				templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(successMsg)
+				if templ_7745c5c3_Err != nil {
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/profile.templ`, Line: 14, Col: 44}
+				}
+				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "</div>")
+				if templ_7745c5c3_Err != nil {
+					return templ_7745c5c3_Err
+				}
+			}
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "<!-- Update display name --><div class=\"card\" style=\"margin-bottom:20px;padding:20px 24px;\"><h2 style=\"font-size:14px;font-weight:600;margin-bottom:4px;\">Display name</h2><p style=\"font-size:12.5px;color:var(--text-muted);margin-bottom:16px;\">This name appears in the sidebar and on shared files.</p><form method=\"POST\" action=\"/profile\" style=\"display:flex;flex-direction:column;gap:12px;\"><input class=\"input\" type=\"text\" name=\"name\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			var templ_7745c5c3_Var4 string
-			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
+			var templ_7745c5c3_Var5 string
+			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(user.Name)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/profile.templ`, Line: 27, Col: 23}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/profile.templ`, Line: 30, Col: 23}
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 5, "\" placeholder=\"Your name\" required maxlength=\"100\" style=\"max-width:360px;\"><div><button class=\"btn btn-primary\" type=\"submit\">Save name</button></div></form></div><!-- Change password --><div class=\"card\" style=\"padding:20px 24px;\"><h2 style=\"font-size:14px;font-weight:600;margin-bottom:4px;\">Change password</h2><p style=\"font-size:12.5px;color:var(--text-muted);margin-bottom:16px;\">Choose a password at least 8 characters long.</p><form method=\"POST\" action=\"/profile/password\" style=\"display:flex;flex-direction:column;gap:12px;\"><input class=\"input\" type=\"password\" name=\"current_password\" placeholder=\"Current password\" required style=\"max-width:360px;\"> <input class=\"input\" type=\"password\" name=\"new_password\" placeholder=\"New password\" required minlength=\"8\" style=\"max-width:360px;\"> <input class=\"input\" type=\"password\" name=\"confirm_password\" placeholder=\"Confirm new password\" required minlength=\"8\" style=\"max-width:360px;\"><div><button class=\"btn btn-primary\" type=\"submit\">Update password</button></div></form></div></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 7, "\" placeholder=\"Your name\" required maxlength=\"100\" style=\"max-width:360px;\"><div><button class=\"btn btn-primary\" type=\"submit\">Save name</button></div></form></div><!-- Change password --><div class=\"card\" style=\"padding:20px 24px;\"><h2 style=\"font-size:14px;font-weight:600;margin-bottom:4px;\">Change password</h2><p style=\"font-size:12.5px;color:var(--text-muted);margin-bottom:16px;\">Choose a password at least 8 characters long.</p><form method=\"POST\" action=\"/profile/password\" style=\"display:flex;flex-direction:column;gap:12px;\"><input class=\"input\" type=\"password\" name=\"current_password\" placeholder=\"Current password\" required style=\"max-width:360px;\"> <input class=\"input\" type=\"password\" name=\"new_password\" placeholder=\"New password\" required minlength=\"8\" style=\"max-width:360px;\"> <input class=\"input\" type=\"password\" name=\"confirm_password\" placeholder=\"Confirm new password\" required minlength=\"8\" style=\"max-width:360px;\"><div><button class=\"btn btn-primary\" type=\"submit\">Update password</button></div></form></div></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

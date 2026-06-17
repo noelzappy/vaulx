@@ -27,9 +27,16 @@ func (h *ProfileHandler) Page(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+	var successMsg string
+	switch r.URL.Query().Get("success") {
+	case "name":
+		successMsg = "Display name updated."
+	case "password":
+		successMsg = "Password updated successfully."
+	}
 	user := viewmodel.UserView{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.ProfilePage(user, "").Render(r.Context(), w)
+	_ = templates.ProfilePage(user, "", successMsg).Render(r.Context(), w)
 }
 
 func (h *ProfileHandler) UpdateName(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +56,7 @@ func (h *ProfileHandler) UpdateName(w http.ResponseWriter, r *http.Request) {
 		user := viewmodel.UserView{ID: u.ID, Email: u.Email, Name: u.Name, Role: u.Role}
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = templates.ProfilePage(user, "Name cannot be empty.").Render(r.Context(), w)
+		_ = templates.ProfilePage(user, "Name cannot be empty.", "").Render(r.Context(), w)
 		return
 	}
 
@@ -80,9 +87,7 @@ func (h *ProfileHandler) UpdateName(w http.ResponseWriter, r *http.Request) {
 		Action: "profile.name_updated",
 	})
 
-	user := viewmodel.UserView{ID: u.ID, Email: u.Email, Name: name, Role: u.Role}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.ProfilePage(user, "").Render(r.Context(), w)
+	http.Redirect(w, r, "/profile?success=name", http.StatusSeeOther)
 }
 
 func (h *ProfileHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
@@ -106,7 +111,7 @@ func (h *ProfileHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) 
 	renderErr := func(msg string) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.WriteHeader(http.StatusBadRequest)
-		_ = templates.ProfilePage(user, msg).Render(r.Context(), w)
+		_ = templates.ProfilePage(user, msg, "").Render(r.Context(), w)
 	}
 
 	if newPw != confirmPw {
@@ -155,6 +160,5 @@ func (h *ProfileHandler) UpdatePassword(w http.ResponseWriter, r *http.Request) 
 		Action: "profile.password_updated",
 	})
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.ProfilePage(user, "").Render(r.Context(), w)
+	http.Redirect(w, r, "/profile?success=password", http.StatusSeeOther)
 }
