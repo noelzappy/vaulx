@@ -1,0 +1,73 @@
+package templates
+
+import "github.com/noelzappy/vaulx/internal/viewmodel"
+
+templ SharedFilePage(slug string, file viewmodel.FileView, previewURL string, expires string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ file.Name } — Vaulx</title>
+			<link rel="stylesheet" href="/static/app.css"/>
+		</head>
+		<body>
+			<div class="shared-page">
+				<header class="shared-header">
+					<div class="sidebar-logo" style="padding:0;">Vaul<span>x</span></div>
+					<div>
+						<h1 class="shared-title">{ file.Name }</h1>
+						<p class="shared-subtitle">Shared file — read only</p>
+					</div>
+				</header>
+				<main class="shared-main">
+					<div class="shared-file-preview">
+						@sharedFilePreview(file.MimeType, previewURL, file.Name)
+					</div>
+					<div class="shared-file-meta">
+						<p class="shared-file-name">{ file.Name }</p>
+						<p class="shared-file-info">{ file.SizeHuman } · { sharedMimeLabel(file.MimeType) } · Expires { expires }</p>
+					</div>
+					<div class="shared-file-actions">
+						<a class="btn btn-primary" href={ templ.SafeURL("/s/" + slug + "/download") }>↓ Download</a>
+						<button class="btn btn-ghost" id="copy-link-btn" onclick="copyShareLink()">⎘ Copy link</button>
+					</div>
+				</main>
+			</div>
+			<script>
+				function copyShareLink() {
+					navigator.clipboard.writeText(window.location.href).then(function() {
+						var btn = document.getElementById('copy-link-btn');
+						btn.textContent = 'Copied!';
+						setTimeout(function() { btn.textContent = '⎘ Copy link'; }, 2000);
+					});
+				}
+			</script>
+		</body>
+	</html>
+}
+
+templ sharedFilePreview(mimeType, previewURL, name string) {
+	if len(mimeType) >= 5 && mimeType[:5] == "image" {
+		<img src={ previewURL } alt={ name } class="shared-file-img"/>
+	} else if len(mimeType) >= 5 && mimeType[:5] == "video" {
+		<video controls class="shared-file-video">
+			<source src={ previewURL } type={ mimeType }/>
+		</video>
+	} else if len(mimeType) >= 5 && mimeType[:5] == "audio" {
+		<audio controls class="shared-file-audio">
+			<source src={ previewURL } type={ mimeType }/>
+		</audio>
+	} else if mimeType == "application/pdf" {
+		<iframe src={ previewURL } class="shared-file-pdf"></iframe>
+	} else {
+		<div class="shared-file-no-preview">
+			<div class="card-icon shared-file-icon">
+				@fileTypeIcon(mimeType)
+			</div>
+			if ext := sharedFileExt(name); ext != "" {
+				<p class="shared-file-ext">.{ ext }</p>
+			}
+		</div>
+	}
+}

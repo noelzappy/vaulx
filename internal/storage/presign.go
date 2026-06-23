@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -53,6 +54,24 @@ func PresignGETWithTTL(ctx context.Context, key string, ttl time.Duration) (stri
 	}, s3.WithPresignExpires(ttl))
 	if err != nil {
 		return "", fmt.Errorf("storage: presign GET %s: %w", key, err)
+	}
+	return req.URL, nil
+}
+
+// PresignGETDownload returns a presigned URL that forces the browser to download
+// the file (Content-Disposition: attachment) rather than rendering it inline.
+func PresignGETDownload(ctx context.Context, key, filename string) (string, error) {
+	if PresignClient == nil {
+		return "", fmt.Errorf("storage: not connected")
+	}
+	safe := strings.NewReplacer(`"`, ``, `\`, ``).Replace(filename)
+	req, err := PresignClient.PresignGetObject(ctx, &s3.GetObjectInput{
+		Bucket:                     aws.String(Bucket),
+		Key:                        aws.String(key),
+		ResponseContentDisposition: aws.String(`attachment; filename="` + safe + `"`),
+	}, s3.WithPresignExpires(15*time.Minute))
+	if err != nil {
+		return "", fmt.Errorf("storage: presign download %s: %w", key, err)
 	}
 	return req.URL, nil
 }

@@ -88,6 +88,7 @@ func main() {
 
 	// Public share routes — no auth required
 	r.Get("/s/{slug}", shareHandler.ResolveShare)
+	r.Get("/s/{slug}/download", shareHandler.SharedFileDirectDownload)
 	r.Get("/s/{slug}/file/{fileID}", shareHandler.SharedFileDownload)
 
 	r.Group(func(r chi.Router) {

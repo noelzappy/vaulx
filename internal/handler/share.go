@@ -142,13 +142,63 @@ func (h *ShareHandler) ResolveShare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloadURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	previewURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	if err != nil {
+		http.Error(w, "failed to generate preview URL", http.StatusInternalServerError)
+		return
+	}
+
+	expires := "No expiry"
+	if share.ExpiresAt.Valid {
+		expires = share.ExpiresAt.Time.Format("Jan 2, 2006")
+	}
+
+	_ = h.queries.IncrementShareViewCount(r.Context(), share.ID)
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.SharedFilePage(share.Slug, viewmodel.FileFromDB(file, ""), previewURL, expires).Render(r.Context(), w)
+}
+
+// GET /s/{slug}/download — forces a file-save download for a direct file share.
+func (h *ShareHandler) SharedFileDirectDownload(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" || h.queries == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	share, err := h.queries.GetShareBySlug(r.Context(), slug)
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	if share.ExpiresAt.Valid && time.Now().UTC().After(share.ExpiresAt.Time) {
+		http.Error(w, "link expired", http.StatusGone)
+		return
+	}
+
+	if share.MaxViews != nil && share.ViewCount >= *share.MaxViews {
+		http.Error(w, "link expired", http.StatusGone)
+		return
+	}
+
+	if share.FolderID.Valid {
+		http.NotFound(w, r)
+		return
+	}
+
+	file, err := h.queries.GetFile(r.Context(), share.FileID)
+	if err != nil || file.Status != "active" {
+		http.NotFound(w, r)
+		return
+	}
+
+	downloadURL, err := storage.PresignGETDownload(r.Context(), file.S3Key, file.Name)
 	if err != nil {
 		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
 		return
 	}
 
-	_ = h.queries.IncrementShareViewCount(r.Context(), share.ID)
 	http.Redirect(w, r, downloadURL, http.StatusFound)
 }
 

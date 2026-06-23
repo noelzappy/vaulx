@@ -240,6 +240,19 @@ button{cursor:pointer;font:inherit}
 .shared-title{font-size:18px;font-weight:600;color:var(--text)}
 .shared-subtitle{font-size:12.5px;color:var(--text-muted)}
 .shared-main{padding-bottom:48px}
+.shared-file-preview{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;min-height:120px;display:flex;align-items:center;justify-content:center}
+.shared-file-img{max-width:100%;max-height:520px;display:block;object-fit:contain}
+.shared-file-video{width:100%;max-height:480px;display:block}
+.shared-file-audio{width:100%;padding:20px}
+.shared-file-pdf{width:100%;height:500px;border:none;display:block}
+.shared-file-no-preview{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:12px}
+.shared-file-icon{width:56px;height:56px;border-radius:var(--radius-sm);background:rgba(240,165,0,.12);display:flex;align-items:center;justify-content:center}
+.shared-file-icon svg{width:28px;height:28px;color:var(--accent)}
+.shared-file-ext{font-size:13px;font-weight:600;color:var(--text-faint);font-family:monospace;letter-spacing:.05em}
+.shared-file-meta{margin-bottom:20px}
+.shared-file-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;word-break:break-all}
+.shared-file-info{font-size:12.5px;color:var(--text-muted)}
+.shared-file-actions{display:flex;gap:10px;flex-wrap:wrap}
 
 /* Error pages */
 .error-standalone{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--bg);text-align:center;padding:20px}

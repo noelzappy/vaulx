@@ -55,3 +55,33 @@ func TestResolveShare_EmptySlug(t *testing.T) {
 		t.Errorf("expected 400, got %d", rr.Code)
 	}
 }
+
+func TestSharedFileDirectDownload_EmptySlug(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/s//download", nil)
+	ctx := withChiParam(req.Context(), "slug", "")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.SharedFileDirectDownload(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestSharedFileDirectDownload_NilQueries(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/s/some-slug/download", nil)
+	ctx := withChiParam(req.Context(), "slug", "some-slug")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.SharedFileDirectDownload(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}
