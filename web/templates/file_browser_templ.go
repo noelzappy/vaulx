@@ -121,7 +121,7 @@ func FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView)
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" style=\"margin-bottom:20px;\"></div><script>\n\t\t\t\t(function() {\n\t\t\t\t\tvar fid = document.getElementById('uppy-container') && document.getElementById('uppy-container').dataset.folderId || '';\n\t\t\t\t\tif (typeof initUppy === 'function') { initUppy(fid); }\n\t\t\t\t})();\n\t\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 6, "\" style=\"margin-bottom:20px;\"></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -138,7 +138,7 @@ func FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView)
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(data.FolderID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 52, Col: 63}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 46, Col: 63}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
@@ -159,7 +159,7 @@ func FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView)
 				return templ_7745c5c3_Err
 			}
 			if user.Role == "admin" || user.Role == "editor" {
-				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p style=\"font-size:12.5px;color:var(--text-muted);\">Upload files or create a folder to get started.</p>")
+				templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "<p style=\"font-size:12.5px;color:var(--text-muted);\">Drop files in the uploader above, or create a folder.</p>")
 				if templ_7745c5c3_Err != nil {
 					return templ_7745c5c3_Err
 				}
@@ -257,7 +257,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var7 string
 				templ_7745c5c3_Var7, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 99, Col: 49}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 93, Col: 49}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var7))
 				if templ_7745c5c3_Err != nil {
@@ -275,7 +275,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var8 templ.SafeURL
 				templ_7745c5c3_Var8, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(crumb.URL))
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 102, Col: 36}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 96, Col: 36}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var8))
 				if templ_7745c5c3_Err != nil {
@@ -288,7 +288,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var9 string
 				templ_7745c5c3_Var9, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.URL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 103, Col: 23}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 97, Col: 23}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var9))
 				if templ_7745c5c3_Err != nil {
@@ -301,7 +301,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var10 string
 				templ_7745c5c3_Var10, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.URL)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 106, Col: 28}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 100, Col: 28}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var10))
 				if templ_7745c5c3_Err != nil {
@@ -314,7 +314,7 @@ func Breadcrumb(crumbs []viewmodel.BreadcrumbItem) templ.Component {
 				var templ_7745c5c3_Var11 string
 				templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(crumb.Name)
 				if templ_7745c5c3_Err != nil {
-					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 107, Col: 17}
+					return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 101, Col: 17}
 				}
 				_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 				if templ_7745c5c3_Err != nil {
@@ -367,7 +367,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 			var templ_7745c5c3_Var13 templ.SafeURL
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page-1, p.Limit)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 119, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 113, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
@@ -380,7 +380,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page-1, p.Limit))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 120, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 114, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
@@ -403,7 +403,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 		var templ_7745c5c3_Var15 string
 		templ_7745c5c3_Var15, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", p.Page))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 128, Col: 64}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 122, Col: 64}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var15))
 		if templ_7745c5c3_Err != nil {
@@ -416,7 +416,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 		var templ_7745c5c3_Var16 string
 		templ_7745c5c3_Var16, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%d", p.TotalPages))
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 128, Col: 103}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 122, Col: 103}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var16))
 		if templ_7745c5c3_Err != nil {
@@ -434,7 +434,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 			var templ_7745c5c3_Var17 templ.SafeURL
 			templ_7745c5c3_Var17, templ_7745c5c3_Err = templ.JoinURLErrs(templ.SafeURL(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page+1, p.Limit)))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 132, Col: 88}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 126, Col: 88}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var17))
 			if templ_7745c5c3_Err != nil {
@@ -447,7 +447,7 @@ func PaginationBar(p viewmodel.PaginationData, baseURL string) templ.Component {
 			var templ_7745c5c3_Var18 string
 			templ_7745c5c3_Var18, templ_7745c5c3_Err = templ.JoinStringErrs(fmt.Sprintf("%s?page=%d&limit=%d", baseURL, p.Page+1, p.Limit))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 133, Col: 75}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 127, Col: 75}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var18))
 			if templ_7745c5c3_Err != nil {
@@ -506,7 +506,7 @@ func searchBox(q string) templ.Component {
 		var templ_7745c5c3_Var20 string
 		templ_7745c5c3_Var20, templ_7745c5c3_Err = templ.JoinStringErrs(q)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 157, Col: 11}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 151, Col: 11}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var20))
 		if templ_7745c5c3_Err != nil {
@@ -603,7 +603,7 @@ func SearchResults(q string, folders []viewmodel.FolderView, files []viewmodel.F
 		var templ_7745c5c3_Var24 string
 		templ_7745c5c3_Var24, templ_7745c5c3_Err = templ.JoinStringErrs(q)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 190, Col: 47}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 184, Col: 47}
 		}
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var24))
 		if templ_7745c5c3_Err != nil {
@@ -621,7 +621,7 @@ func SearchResults(q string, folders []viewmodel.FolderView, files []viewmodel.F
 			var templ_7745c5c3_Var25 string
 			templ_7745c5c3_Var25, templ_7745c5c3_Err = templ.JoinStringErrs(q)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 197, Col: 82}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `web/templates/file_browser.templ`, Line: 191, Col: 82}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var25))
 			if templ_7745c5c3_Err != nil {
