@@ -69,6 +69,7 @@ func main() {
 	permissionHandler := handler.NewPermissionHandler(queries)
 	multipartHandler  := handler.NewMultipartHandler(queries)
 	profileHandler    := handler.NewProfileHandler(queries, sessionStore)
+	zipHandler        := handler.NewZipHandler(queries, shareHandler)
 
 	r := chi.NewRouter()
 	r.Use(chimw.Logger)
@@ -90,6 +91,7 @@ func main() {
 	r.Get("/s/{slug}", shareHandler.ResolveShare)
 	r.Get("/s/{slug}/download", shareHandler.SharedFileDirectDownload)
 	r.Get("/s/{slug}/file/{fileID}", shareHandler.SharedFileDownload)
+	r.Get("/s/{slug}/zip", zipHandler.SharedStreamZip)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
@@ -103,6 +105,7 @@ func main() {
 		// Search + download — registered BEFORE /files/{folderID} to avoid wildcard swallowing
 		r.Get("/files/search", filesHandler.Search)
 		r.Get("/files/{fileID}/download", downloadHandler.Download)
+		r.Get("/files/{folderID}/zip", zipHandler.StreamZip)
 
 		// Folder listing wildcard — must come after the download route
 		r.Get("/files/{folderID}", filesHandler.ListFolder)
