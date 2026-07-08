@@ -19,6 +19,15 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 			</div>
 			<div style="display:flex;gap:8px;align-items:center;">
 				@searchBox("")
+				if data.FolderID != "" {
+					<a class="btn btn-ghost" href={ templ.SafeURL("/files/" + data.FolderID + "/zip") }>Download zip</a>
+					<button
+						class="btn btn-ghost"
+						hx-post={ "/files/" + data.FolderID + "/zip/prepare" }
+						hx-target="#zip-status-slot"
+						hx-swap="innerHTML"
+					>Prepare zip</button>
+				}
 				if user.Role == "admin" || user.Role == "editor" {
 					<button
 						class="btn btn-ghost"
@@ -32,6 +41,9 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 				}
 			</div>
 		</div>
+		if data.FolderID != "" {
+			<div id="zip-status-slot" style="margin-bottom:12px;"></div>
+		}
 		if user.Role == "admin" || user.Role == "editor" {
 			<div id="uppy-container" data-folder-id={ data.FolderID } style="margin-bottom:20px;"></div>
 		}

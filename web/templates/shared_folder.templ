@@ -2,7 +2,7 @@ package templates
 
 import "github.com/noelzappy/vaulx/internal/viewmodel"
 
-templ SharedFolderPage(slug, folderName string, isRoot bool, folders []viewmodel.FolderView, files []viewmodel.FileView) {
+templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders []viewmodel.FolderView, files []viewmodel.FileView) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
@@ -10,6 +10,7 @@ templ SharedFolderPage(slug, folderName string, isRoot bool, folders []viewmodel
 			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 			<title>{ folderName } — Vaulx</title>
 			<link rel="stylesheet" href="/static/app.css"/>
+			<script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
 		</head>
 		<body>
 			<div class="shared-page">
@@ -19,8 +20,18 @@ templ SharedFolderPage(slug, folderName string, isRoot bool, folders []viewmodel
 						<h1 class="shared-title">{ folderName }</h1>
 						<p class="shared-subtitle">Shared folder — read only</p>
 					</div>
+					<div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
+						<a class="btn btn-ghost" href={ templ.SafeURL("/s/" + slug + "/zip?folder=" + folderID) }>Download zip</a>
+						<button
+							class="btn btn-ghost"
+							hx-post={ "/s/" + slug + "/zip/prepare?folder=" + folderID }
+							hx-target="#zip-status-slot"
+							hx-swap="innerHTML"
+						>Prepare zip</button>
+					</div>
 				</header>
 				<main class="shared-main">
+					<div id="zip-status-slot" style="margin-bottom:12px;"></div>
 					if !isRoot {
 						<a class="btn btn-ghost" style="margin-bottom:16px;" href={ templ.SafeURL("/s/" + slug) }>← Back to shared folder</a>
 					}

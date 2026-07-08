@@ -266,7 +266,7 @@ func (h *ShareHandler) resolveFolderShare(w http.ResponseWriter, r *http.Request
 	isRoot := target.Bytes == share.FolderID.Bytes
 	_ = h.queries.IncrementShareViewCount(ctx, share.ID)
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.SharedFolderPage(share.Slug, folder.Name, isRoot, folders, files).Render(ctx, w)
+	_ = templates.SharedFolderPage(share.Slug, target.String(), folder.Name, isRoot, folders, files).Render(ctx, w)
 }
 
 // GET /s/{slug}/file/{fileID} — download a file that belongs to a shared folder tree.
