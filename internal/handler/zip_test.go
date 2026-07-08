@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -181,6 +182,109 @@ func TestSharedStreamZip_SubfolderInsideTree(t *testing.T) {
 
 func TestSharedStreamZip_ExpiredShareGone(t *testing.T) {
 	rr := sharedZipRequest(t, &shareZipQuerier{expired: true}, "")
+	if rr.Code != http.StatusGone {
+		t.Errorf("status = %d, want 410", rr.Code)
+	}
+}
+
+// prepQuerier extends zipQuerier with zip-job bookkeeping.
+type prepQuerier struct {
+	zipQuerier
+	created  []db.CreateZipJobParams
+	reusable *db.ZipJob
+	byID     map[[16]byte]db.ZipJob
+}
+
+func (m *prepQuerier) CreateZipJob(ctx context.Context, arg db.CreateZipJobParams) (db.ZipJob, error) {
+	m.created = append(m.created, arg)
+	return db.ZipJob{ID: uuid(0x77), FolderID: arg.FolderID, Status: "pending"}, nil
+}
+
+func (m *prepQuerier) GetReusableZipJob(ctx context.Context, arg db.GetReusableZipJobParams) (db.ZipJob, error) {
+	if m.reusable != nil {
+		return *m.reusable, nil
+	}
+	return db.ZipJob{}, errors.New("no rows")
+}
+
+func (m *prepQuerier) GetZipJob(ctx context.Context, id pgtype.UUID) (db.ZipJob, error) {
+	if j, ok := m.byID[id.Bytes]; ok {
+		return j, nil
+	}
+	return db.ZipJob{}, errors.New("no rows")
+}
+
+func prepareRequest(t *testing.T, q db.Querier) *httptest.ResponseRecorder {
+	t.Helper()
+	h := handler.NewZipHandler(q, handler.NewShareHandler(q))
+	req := httptest.NewRequest(http.MethodPost, "/files/0a000000-0000-0000-0000-000000000000/zip/prepare", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("folderID", "0a000000-0000-0000-0000-000000000000")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	req = req.WithContext(auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "admin", Role: "admin"}))
+	rr := httptest.NewRecorder()
+	h.PrepareZip(rr, req)
+	return rr
+}
+
+func TestPrepareZip_CreatesJobWithSnapshot(t *testing.T) {
+	q := &prepQuerier{}
+	rr := prepareRequest(t, q)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d", rr.Code)
+	}
+	if len(q.created) != 1 {
+		t.Fatalf("created %d jobs, want 1", len(q.created))
+	}
+	// zipQuerier tree: 2 files x 3 bytes
+	if q.created[0].FileCount != 2 || q.created[0].ContentBytes != 6 {
+		t.Errorf("snapshot = %+v", q.created[0])
+	}
+	if !strings.Contains(rr.Body.String(), "Preparing zip") {
+		t.Errorf("body = %q", rr.Body.String())
+	}
+}
+
+func TestPrepareZip_ReusesExistingJob(t *testing.T) {
+	q := &prepQuerier{reusable: &db.ZipJob{ID: uuid(0x66), Status: "running"}}
+	rr := prepareRequest(t, q)
+	if len(q.created) != 0 {
+		t.Errorf("expected no new job, created %d", len(q.created))
+	}
+	if !strings.Contains(rr.Body.String(), "Preparing zip") {
+		t.Errorf("body = %q", rr.Body.String())
+	}
+}
+
+func TestZipStatus_Ready(t *testing.T) {
+	key := "zips/a/b.zip"
+	job := db.ZipJob{ID: uuid(0x66), Status: "ready", S3Key: &key}
+	q := &prepQuerier{reusable: &job, byID: map[[16]byte]db.ZipJob{{0x66}: job}}
+	h := handler.NewZipHandler(q, handler.NewShareHandler(q))
+	h.Presign = func(ctx context.Context, k, filename string) (string, error) {
+		return "https://signed.example/" + k, nil
+	}
+	req := httptest.NewRequest(http.MethodGet, "/files/0a000000-0000-0000-0000-000000000000/zip/status", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("folderID", "0a000000-0000-0000-0000-000000000000")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	req = req.WithContext(auth.SetCurrentUser(req.Context(), auth.UserContext{ID: "admin", Role: "admin"}))
+	rr := httptest.NewRecorder()
+	h.ZipStatus(rr, req)
+	if !strings.Contains(rr.Body.String(), "https://signed.example/zips/a/b.zip") {
+		t.Errorf("body = %q", rr.Body.String())
+	}
+}
+
+func TestSharedPrepareZip_ExpiredShareGone(t *testing.T) {
+	sq := &shareZipQuerier{expired: true}
+	h := handler.NewZipHandler(sq, handler.NewShareHandler(sq))
+	req := httptest.NewRequest(http.MethodPost, "/s/abc/zip/prepare", nil)
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("slug", "abc")
+	req = req.WithContext(context.WithValue(req.Context(), chi.RouteCtxKey, rctx))
+	rr := httptest.NewRecorder()
+	h.SharedPrepareZip(rr, req)
 	if rr.Code != http.StatusGone {
 		t.Errorf("status = %d, want 410", rr.Code)
 	}

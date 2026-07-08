@@ -14,6 +14,7 @@ import (
 	"github.com/noelzappy/vaulx/internal/handler"
 	"github.com/noelzappy/vaulx/internal/seed"
 	"github.com/noelzappy/vaulx/internal/storage"
+	"github.com/noelzappy/vaulx/internal/zipjobs"
 	"github.com/noelzappy/vaulx/migrations"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/httprate"
@@ -92,6 +93,8 @@ func main() {
 	r.Get("/s/{slug}/download", shareHandler.SharedFileDirectDownload)
 	r.Get("/s/{slug}/file/{fileID}", shareHandler.SharedFileDownload)
 	r.Get("/s/{slug}/zip", zipHandler.SharedStreamZip)
+	r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/s/{slug}/zip/prepare", zipHandler.SharedPrepareZip)
+	r.Get("/s/{slug}/zip/status", zipHandler.SharedZipStatus)
 
 	r.Group(func(r chi.Router) {
 		r.Use(auth.RequireAuth(sessionStore))
@@ -106,6 +109,8 @@ func main() {
 		r.Get("/files/search", filesHandler.Search)
 		r.Get("/files/{fileID}/download", downloadHandler.Download)
 		r.Get("/files/{folderID}/zip", zipHandler.StreamZip)
+		r.Post("/files/{folderID}/zip/prepare", zipHandler.PrepareZip)
+		r.Get("/files/{folderID}/zip/status", zipHandler.ZipStatus)
 
 		// Folder listing wildcard — must come after the download route
 		r.Get("/files/{folderID}", filesHandler.ListFolder)
@@ -155,6 +160,18 @@ func main() {
 			r.Delete("/permissions/{permID}", permissionHandler.Revoke)
 		})
 	})
+
+	zipWorker := &zipjobs.Worker{
+		Queries:     queries,
+		ListEntries: zipHandler.EntriesForWorker(),
+		Fetch:       storage.GetObjectStream,
+		Upload:      storage.UploadStream,
+		Delete:      storage.DeleteObject,
+	}
+	if err := zipWorker.RecoverStale(ctx); err != nil {
+		log.Printf("zipjobs: recover stale: %v", err)
+	}
+	zipWorker.Start(ctx)
 
 	port := os.Getenv("PORT")
 	if port == "" {

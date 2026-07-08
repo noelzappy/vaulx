@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"sort"
@@ -20,13 +21,19 @@ import (
 type ZipHandler struct {
 	queries db.Querier
 	shares  *ShareHandler
-	// Fetch is the object reader used for zip entries; a field so tests can
-	// substitute in-memory objects.
-	Fetch zipbuild.FetchFunc
+	// Fetch and Presign are handler seams so tests can substitute in-memory
+	// objects and canned URLs.
+	Fetch   zipbuild.FetchFunc
+	Presign func(ctx context.Context, key, filename string) (string, error)
 }
 
 func NewZipHandler(q db.Querier, sh *ShareHandler) *ZipHandler {
-	return &ZipHandler{queries: q, shares: sh, Fetch: storage.GetObjectStream}
+	return &ZipHandler{
+		queries: q,
+		shares:  sh,
+		Fetch:   storage.GetObjectStream,
+		Presign: storage.PresignGETDownload,
+	}
 }
 
 type treeStats struct {
@@ -174,4 +181,144 @@ func (h *ZipHandler) SharedStreamZip(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.streamZip(w, r, target, nil)
+}
+
+// EntriesForWorker adapts collectEntries for the background worker (no
+// owner filter: prepared zips carry the folder's full active tree — the
+// dashboard prepare button sits behind auth like streaming, and share
+// prepares are tree-scoped by resolveShareForZip).
+func (h *ZipHandler) EntriesForWorker() func(ctx context.Context, folderID pgtype.UUID) ([]zipbuild.Entry, error) {
+	return func(ctx context.Context, folderID pgtype.UUID) ([]zipbuild.Entry, error) {
+		entries, _, err := h.collectEntries(ctx, folderID, nil)
+		return entries, err
+	}
+}
+
+// findJob returns the folder's current job — an in-flight one, or a ready
+// one whose snapshot still matches the folder contents. found=false means
+// no such job; err is reserved for listing failures.
+func (h *ZipHandler) findJob(ctx context.Context, folderID pgtype.UUID) (job db.ZipJob, stats treeStats, found bool, err error) {
+	_, stats, err = h.collectEntries(ctx, folderID, nil)
+	if err != nil {
+		return db.ZipJob{}, treeStats{}, false, err
+	}
+	job, jerr := h.queries.GetReusableZipJob(ctx, db.GetReusableZipJobParams{
+		FolderID:     folderID,
+		FileCount:    stats.FileCount,
+		ContentBytes: stats.ContentBytes,
+		CreatedAt:    stats.NewestFile,
+	})
+	return job, stats, jerr == nil, nil
+}
+
+// prepare finds or creates a job for the folder and renders its status.
+func (h *ZipHandler) prepare(w http.ResponseWriter, r *http.Request, folderID pgtype.UUID, shareID pgtype.UUID, statusURL string) {
+	job, stats, found, err := h.findJob(r.Context(), folderID)
+	if err != nil {
+		http.Error(w, "failed to inspect folder", http.StatusInternalServerError)
+		return
+	}
+	if !found {
+		job, err = h.queries.CreateZipJob(r.Context(), db.CreateZipJobParams{
+			FolderID:     folderID,
+			ShareID:      shareID,
+			FileCount:    stats.FileCount,
+			ContentBytes: stats.ContentBytes,
+		})
+		if err != nil {
+			http.Error(w, "failed to create zip job", http.StatusInternalServerError)
+			return
+		}
+	}
+	h.renderJobStatus(w, r, job, statusURL)
+}
+
+// renderJobStatus writes the htmx status fragment for a job.
+func (h *ZipHandler) renderJobStatus(w http.ResponseWriter, r *http.Request, job db.ZipJob, statusURL string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	switch job.Status {
+	case "ready":
+		if job.S3Key == nil {
+			fmt.Fprint(w, `<div class="zip-status">Zip failed: missing archive</div>`)
+			return
+		}
+		url, err := h.Presign(r.Context(), *job.S3Key, "folder.zip")
+		if err != nil {
+			fmt.Fprint(w, `<div class="zip-status">Zip failed: could not sign download</div>`)
+			return
+		}
+		fmt.Fprintf(w, `<div class="zip-status"><a class="btn btn-primary" href="%s">Download zip (resumable, expires in 24h)</a></div>`, url)
+	case "failed":
+		msg := "unknown error"
+		if job.Error != nil {
+			msg = *job.Error
+		}
+		fmt.Fprintf(w, `<div class="zip-status">Zip failed: %s</div>`, html.EscapeString(msg))
+	default: // pending / running
+		fmt.Fprintf(w, `<div class="zip-status" hx-get="%s" hx-trigger="every 3s" hx-swap="outerHTML">Preparing zip…</div>`, statusURL)
+	}
+}
+
+// status renders the current job for the folder, or an empty slot.
+func (h *ZipHandler) status(w http.ResponseWriter, r *http.Request, folderID pgtype.UUID, statusURL string) {
+	job, _, found, err := h.findJob(r.Context(), folderID)
+	if err != nil {
+		http.Error(w, "failed to inspect folder", http.StatusInternalServerError)
+		return
+	}
+	if !found {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, `<div class="zip-status"></div>`)
+		return
+	}
+	h.renderJobStatus(w, r, job, statusURL)
+}
+
+// POST /files/{folderID}/zip/prepare
+func (h *ZipHandler) PrepareZip(w http.ResponseWriter, r *http.Request) {
+	if _, ok := auth.GetCurrentUser(r.Context()); !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	folderID, err := viewmodel.UUIDFromString(chi.URLParam(r, "folderID"))
+	if err != nil {
+		http.Error(w, "invalid folder id", http.StatusBadRequest)
+		return
+	}
+	h.prepare(w, r, folderID, pgtype.UUID{}, "/files/"+folderID.String()+"/zip/status")
+}
+
+// GET /files/{folderID}/zip/status
+func (h *ZipHandler) ZipStatus(w http.ResponseWriter, r *http.Request) {
+	if _, ok := auth.GetCurrentUser(r.Context()); !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	folderID, err := viewmodel.UUIDFromString(chi.URLParam(r, "folderID"))
+	if err != nil {
+		http.Error(w, "invalid folder id", http.StatusBadRequest)
+		return
+	}
+	h.status(w, r, folderID, "/files/"+folderID.String()+"/zip/status")
+}
+
+// POST /s/{slug}/zip/prepare?folder=
+func (h *ZipHandler) SharedPrepareZip(w http.ResponseWriter, r *http.Request) {
+	share, target, code := h.resolveShareForZip(r)
+	if code != 0 {
+		http.Error(w, http.StatusText(code), code)
+		return
+	}
+	statusURL := "/s/" + share.Slug + "/zip/status?folder=" + target.String()
+	h.prepare(w, r, target, share.ID, statusURL)
+}
+
+// GET /s/{slug}/zip/status?folder=
+func (h *ZipHandler) SharedZipStatus(w http.ResponseWriter, r *http.Request) {
+	share, target, code := h.resolveShareForZip(r)
+	if code != 0 {
+		http.Error(w, http.StatusText(code), code)
+		return
+	}
+	h.status(w, r, target, "/s/"+share.Slug+"/zip/status?folder="+target.String())
 }
