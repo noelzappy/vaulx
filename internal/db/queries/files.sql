@@ -65,3 +65,29 @@ RETURNING *;
 
 -- name: HardDeleteFile :exec
 DELETE FROM files WHERE id = $1;
+
+-- name: ListFolderTreeFolders :many
+WITH RECURSIVE tree AS (
+  SELECT folders.id, folders.parent_id, ''::text AS relpath
+  FROM folders WHERE folders.id = $1
+  UNION ALL
+  SELECT f.id, f.parent_id,
+         CASE WHEN t.relpath = '' THEN f.name ELSE t.relpath || '/' || f.name END
+  FROM folders f JOIN tree t ON f.parent_id = t.id
+)
+SELECT id, relpath FROM tree ORDER BY relpath;
+
+-- name: ListFolderTreeFiles :many
+WITH RECURSIVE tree AS (
+  SELECT folders.id, ''::text AS relpath
+  FROM folders WHERE folders.id = $1
+  UNION ALL
+  SELECT f.id,
+         CASE WHEN t.relpath = '' THEN f.name ELSE t.relpath || '/' || f.name END
+  FROM folders f JOIN tree t ON f.parent_id = t.id
+)
+SELECT fi.id, fi.name, fi.s3_key, fi.size_bytes, fi.uploaded_by, fi.created_at, t.relpath
+FROM files fi
+JOIN tree t ON fi.folder_id = t.id
+WHERE fi.status = 'active'
+ORDER BY t.relpath, fi.name;
