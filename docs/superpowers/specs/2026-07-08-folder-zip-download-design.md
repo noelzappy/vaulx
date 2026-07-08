@@ -33,7 +33,7 @@ Share routes revalidate slug status/expiry exactly like existing `SharedFileDown
 - Duplicate filenames within the same directory get ` (2)`, ` (3)` … suffixes (before extension).
 - Empty subfolders are written as directory entries so the extracted tree matches.
 - Mid-stream S3 failure: log, stop writing — client receives a truncated archive (headers already sent; unavoidable). The prepared path is the remedy for flaky connections.
-- Audit log `file.zip_download` (resource = folder) on start, same pattern as single-file download logging.
+- Audit log `folder.zip_download` (resource = folder) on start, same pattern as single-file download logging.
 
 ## Prepared zip
 
