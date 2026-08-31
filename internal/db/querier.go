@@ -73,6 +73,7 @@ type Querier interface {
 	MarkZipJobReady(ctx context.Context, arg MarkZipJobReadyParams) error
 	MoveFileToFolder(ctx context.Context, arg MoveFileToFolderParams) (File, error)
 	MoveFilesToFolder(ctx context.Context, arg MoveFilesToFolderParams) error
+	ResetFailedThumbnails(ctx context.Context) error
 	ResetPendingThumbnails(ctx context.Context) error
 	RestoreFile(ctx context.Context, id pgtype.UUID) (File, error)
 	RevokePermission(ctx context.Context, id pgtype.UUID) error

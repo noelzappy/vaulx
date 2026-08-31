@@ -139,6 +139,15 @@ func (q *Queries) MarkThumbnailReady(ctx context.Context, arg MarkThumbnailReady
 	return err
 }
 
+const resetFailedThumbnails = `-- name: ResetFailedThumbnails :exec
+UPDATE files SET thumb_status = 'none' WHERE thumb_status = 'failed'
+`
+
+func (q *Queries) ResetFailedThumbnails(ctx context.Context) error {
+	_, err := q.db.Exec(ctx, resetFailedThumbnails)
+	return err
+}
+
 const resetPendingThumbnails = `-- name: ResetPendingThumbnails :exec
 UPDATE files SET thumb_status = 'none' WHERE thumb_status = 'pending'
 `

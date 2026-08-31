@@ -25,10 +25,15 @@ type Worker struct {
 	PollEvery   time.Duration // claim-loop interval; default 3s
 }
 
-// RecoverStale resets thumbnails that a previous process left 'pending' back to
-// 'none' so they can be re-claimed. Call once at startup, before Start.
+// RecoverStale resets any thumbnails that aren't 'ready' so the worker can
+// pick them up again at startup: 'pending' rows (a previous process crashed
+// mid-job) and 'failed' rows (a transient error that should be retried).
+// Call once at startup, before Start.
 func (w *Worker) RecoverStale(ctx context.Context) error {
-	return w.Queries.ResetPendingThumbnails(ctx)
+	if err := w.Queries.ResetPendingThumbnails(ctx); err != nil {
+		return err
+	}
+	return w.Queries.ResetFailedThumbnails(ctx)
 }
 
 // Start launches Concurrency claim loops, all exiting when ctx is done.

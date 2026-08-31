@@ -31,6 +31,9 @@ WHERE id = $2;
 -- name: ResetPendingThumbnails :exec
 UPDATE files SET thumb_status = 'none' WHERE thumb_status = 'pending';
 
+-- name: ResetFailedThumbnails :exec
+UPDATE files SET thumb_status = 'none' WHERE thumb_status = 'failed';
+
 -- name: ListFilesMissingThumbnails :many
 SELECT * FROM files
 WHERE status = 'active'

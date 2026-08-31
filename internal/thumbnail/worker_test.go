@@ -39,6 +39,7 @@ type querier struct {
 	readyH    *int32
 	failedErr *string
 	reset     bool
+	resetFail bool
 }
 
 func (m *querier) ClaimPendingThumbnail(ctx context.Context) (db.File, error) {
@@ -64,6 +65,11 @@ func (m *querier) MarkThumbnailFailed(ctx context.Context, arg db.MarkThumbnailF
 
 func (m *querier) ResetPendingThumbnails(ctx context.Context) error {
 	m.reset = true
+	return nil
+}
+
+func (m *querier) ResetFailedThumbnails(ctx context.Context) error {
+	m.resetFail = true
 	return nil
 }
 
@@ -127,5 +133,8 @@ func TestWorkerRecoverStale(t *testing.T) {
 	}
 	if !q.reset {
 		t.Fatal("expected RecoverStale to reset pending")
+	}
+	if !q.resetFail {
+		t.Fatal("expected RecoverStale to reset failed")
 	}
 }
