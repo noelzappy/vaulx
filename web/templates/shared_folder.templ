@@ -22,7 +22,7 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 						<p class="shared-subtitle">Shared folder — read only</p>
 					</div>
 					<div style="display:flex;gap:8px;align-items:center;margin-left:auto;">
-						<a class="btn btn-ghost" href={ templ.SafeURL("/s/" + slug + "/zip?folder=" + folderID) }>Download zip</a>
+						<a class="btn btn-ghost" href={ templ.SafeURL("/s/" + slug + "/zip?folder=" + folderID) } target="_blank" rel="noopener noreferrer">Download zip</a>
 						<button
 							class="btn btn-ghost"
 							hx-post={ "/s/" + slug + "/zip/prepare?folder=" + folderID }
@@ -78,7 +78,7 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 									<div class="card-meta">
 										<span>{ f.SizeHuman }</span>
 										<span class="card-meta-sep">·</span>
-										<a class="card-btn" href={ templ.SafeURL("/s/" + slug + "/file/" + f.ID) } onclick="event.stopPropagation()">Download</a>
+										<a class="card-btn" href={ templ.SafeURL("/s/" + slug + "/file/" + f.ID) } onclick="event.stopPropagation()" target="_blank" rel="noopener noreferrer">Download</a>
 									</div>
 								</div>
 							}

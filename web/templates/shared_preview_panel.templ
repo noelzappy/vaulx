@@ -32,6 +32,6 @@ templ SharedPreviewPanel(file db.File, presignedURL string, slug string) {
 		</div>
 	</div>
 	<div class="preview-actions">
-		<a class="btn btn-primary" href={ templ.SafeURL("/s/" + slug + "/file/" + file.ID.String()) }>Download</a>
+		<a class="btn btn-primary" href={ templ.SafeURL("/s/" + slug + "/file/" + file.ID.String()) } target="_blank" rel="noopener noreferrer">Download</a>
 	</div>
 }
