@@ -10,6 +10,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		x-data="{ editing: false, menuOpen: false, menuX: 0, menuY: 0, moving: false, folders: [] }"
 		:data-menu-open="menuOpen ? '1' : null"
 		:data-editing="editing ? '1' : null"
+		:class="{'card-selected': $store.selection.ids.includes($el.closest('.card').dataset.fileId)}"
 		title={ file.Name }
 		if canEdit {
 			draggable="true"
@@ -31,6 +32,21 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 		hx-swap="innerHTML"
 		hx-trigger="click[!event.target.closest('[data-menu-open]') && !event.target.closest('[data-editing]') && !event.target.closest('.ctx-menu') && !event.target.closest('form') && !event.target.closest('input')]"
 	>
+		<!-- Selection overlay — covers the card while in select mode -->
+		<div
+			class="card-select-overlay"
+			x-show="$store.selection.active"
+			x-cloak
+			@click.stop="$store.selection.toggle($el.closest('.card').dataset.fileId)"
+			@touchstart.stop
+		>
+			<div class="select-check" :class="{ 'selected': $store.selection.ids.includes($el.closest('.card').dataset.fileId) }">
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" style="width:14px;height:14px;color:inherit;">
+					<path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12.75 6 6 9-13.5"></path>
+				</svg>
+			</div>
+		</div>
+
 		<!-- Floating context menu — position:fixed so it escapes card boundaries -->
 		<div
 			class="ctx-menu"

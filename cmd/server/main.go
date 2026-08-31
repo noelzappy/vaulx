@@ -14,6 +14,7 @@ import (
 	"github.com/noelzappy/vaulx/internal/handler"
 	"github.com/noelzappy/vaulx/internal/seed"
 	"github.com/noelzappy/vaulx/internal/storage"
+	"github.com/noelzappy/vaulx/internal/thumbnail"
 	"github.com/noelzappy/vaulx/internal/zipjobs"
 	"github.com/noelzappy/vaulx/migrations"
 	"github.com/go-chi/chi/v5"
@@ -119,6 +120,8 @@ func main() {
 		r.Delete("/files/{fileID}", filesHandler.DeleteFile)
 		r.Patch("/files/{fileID}/name", filesHandler.RenameFile)
 		r.Patch("/files/{fileID}/folder", filesHandler.MoveFile)
+		r.Post("/files/bulk/move", filesHandler.BulkMove)
+		r.Post("/files/bulk/delete", filesHandler.BulkDelete)
 		r.Post("/files/{fileID}/share", shareHandler.CreateShare)
 
 		// Share management
@@ -172,6 +175,16 @@ func main() {
 		log.Printf("zipjobs: recover stale: %v", err)
 	}
 	zipWorker.Start(ctx)
+
+	thumbWorker := &thumbnail.Worker{
+		Queries: queries,
+		Fetch:   storage.GetObjectStream,
+		Upload:  storage.UploadStream,
+	}
+	if err := thumbWorker.RecoverStale(ctx); err != nil {
+		log.Printf("thumbnail: recover stale: %v", err)
+	}
+	thumbWorker.Start(ctx)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -100,7 +100,7 @@ func (q *Queries) ListAuditLogPage(ctx context.Context, arg ListAuditLogPagePara
 }
 
 const listFilesPage = `-- name: ListFilesPage :many
-SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files
 WHERE folder_id IS NOT DISTINCT FROM $1
   AND status = 'active'
 ORDER BY created_at DESC
@@ -132,6 +132,12 @@ func (q *Queries) ListFilesPage(ctx context.Context, arg ListFilesPageParams) ([
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -144,7 +150,7 @@ func (q *Queries) ListFilesPage(ctx context.Context, arg ListFilesPageParams) ([
 }
 
 const updateFileSizeAndStatus = `-- name: UpdateFileSizeAndStatus :one
-UPDATE files SET size_bytes = $1, status = $2 WHERE id = $3 RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+UPDATE files SET size_bytes = $1, status = $2 WHERE id = $3 RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 type UpdateFileSizeAndStatusParams struct {
@@ -166,6 +172,12 @@ func (q *Queries) UpdateFileSizeAndStatus(ctx context.Context, arg UpdateFileSiz
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }

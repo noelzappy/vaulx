@@ -14,7 +14,7 @@ import (
 const activateFile = `-- name: ActivateFile :one
 UPDATE files SET status = 'active'
 WHERE id = $1 AND status = 'pending'
-RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 func (q *Queries) ActivateFile(ctx context.Context, id pgtype.UUID) (File, error) {
@@ -30,6 +30,12 @@ func (q *Queries) ActivateFile(ctx context.Context, id pgtype.UUID) (File, error
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }
@@ -37,7 +43,7 @@ func (q *Queries) ActivateFile(ctx context.Context, id pgtype.UUID) (File, error
 const createFile = `-- name: CreateFile :one
 INSERT INTO files (folder_id, name, s3_key, size_bytes, mime_type, uploaded_by)
 VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 type CreateFileParams struct {
@@ -69,12 +75,18 @@ func (q *Queries) CreateFile(ctx context.Context, arg CreateFileParams) (File, e
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }
 
 const getFile = `-- name: GetFile :one
-SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files WHERE id = $1
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files WHERE id = $1
 `
 
 func (q *Queries) GetFile(ctx context.Context, id pgtype.UUID) (File, error) {
@@ -90,8 +102,54 @@ func (q *Queries) GetFile(ctx context.Context, id pgtype.UUID) (File, error) {
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
+}
+
+const getFilesByIDs = `-- name: GetFilesByIDs :many
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files WHERE id = ANY($1::uuid[])
+`
+
+func (q *Queries) GetFilesByIDs(ctx context.Context, ids []pgtype.UUID) ([]File, error) {
+	rows, err := q.db.Query(ctx, getFilesByIDs, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []File
+	for rows.Next() {
+		var i File
+		if err := rows.Scan(
+			&i.ID,
+			&i.FolderID,
+			&i.Name,
+			&i.S3Key,
+			&i.SizeBytes,
+			&i.MimeType,
+			&i.UploadedBy,
+			&i.Status,
+			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const hardDeleteFile = `-- name: HardDeleteFile :exec
@@ -103,8 +161,17 @@ func (q *Queries) HardDeleteFile(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const hardDeleteFilesMany = `-- name: HardDeleteFilesMany :exec
+DELETE FROM files WHERE id = ANY($1::uuid[])
+`
+
+func (q *Queries) HardDeleteFilesMany(ctx context.Context, ids []pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, hardDeleteFilesMany, ids)
+	return err
+}
+
 const listDeletedFiles = `-- name: ListDeletedFiles :many
-SELECT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at, u.name AS uploader_name
+SELECT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at, f.thumb_s3_key, f.thumb_width, f.thumb_height, f.thumb_status, f.thumb_generated_at, f.thumb_error, u.name AS uploader_name
 FROM files f
 LEFT JOIN users u ON u.id = f.uploaded_by
 WHERE f.status = 'deleted'
@@ -112,16 +179,22 @@ ORDER BY f.created_at DESC
 `
 
 type ListDeletedFilesRow struct {
-	ID           pgtype.UUID        `json:"id"`
-	FolderID     pgtype.UUID        `json:"folder_id"`
-	Name         string             `json:"name"`
-	S3Key        string             `json:"s3_key"`
-	SizeBytes    int64              `json:"size_bytes"`
-	MimeType     *string            `json:"mime_type"`
-	UploadedBy   pgtype.UUID        `json:"uploaded_by"`
-	Status       string             `json:"status"`
-	CreatedAt    pgtype.Timestamptz `json:"created_at"`
-	UploaderName *string            `json:"uploader_name"`
+	ID               pgtype.UUID        `json:"id"`
+	FolderID         pgtype.UUID        `json:"folder_id"`
+	Name             string             `json:"name"`
+	S3Key            string             `json:"s3_key"`
+	SizeBytes        int64              `json:"size_bytes"`
+	MimeType         *string            `json:"mime_type"`
+	UploadedBy       pgtype.UUID        `json:"uploaded_by"`
+	Status           string             `json:"status"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ThumbS3Key       *string            `json:"thumb_s3_key"`
+	ThumbWidth       *int32             `json:"thumb_width"`
+	ThumbHeight      *int32             `json:"thumb_height"`
+	ThumbStatus      string             `json:"thumb_status"`
+	ThumbGeneratedAt pgtype.Timestamptz `json:"thumb_generated_at"`
+	ThumbError       *string            `json:"thumb_error"`
+	UploaderName     *string            `json:"uploader_name"`
 }
 
 func (q *Queries) ListDeletedFiles(ctx context.Context) ([]ListDeletedFilesRow, error) {
@@ -143,6 +216,12 @@ func (q *Queries) ListDeletedFiles(ctx context.Context) ([]ListDeletedFilesRow, 
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 			&i.UploaderName,
 		); err != nil {
 			return nil, err
@@ -156,7 +235,7 @@ func (q *Queries) ListDeletedFiles(ctx context.Context) ([]ListDeletedFilesRow, 
 }
 
 const listFilesByFolder = `-- name: ListFilesByFolder :many
-SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files
 WHERE folder_id = $1 AND status = 'active'
 ORDER BY name ASC
 `
@@ -180,6 +259,12 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) (
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -192,7 +277,7 @@ func (q *Queries) ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) (
 }
 
 const listFilesByFolderForUser = `-- name: ListFilesByFolderForUser :many
-SELECT DISTINCT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at FROM files f
+SELECT DISTINCT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at, f.thumb_s3_key, f.thumb_width, f.thumb_height, f.thumb_status, f.thumb_generated_at, f.thumb_error FROM files f
 LEFT JOIN permissions p
   ON p.resource_type = 'file' AND p.resource_id = f.id AND p.user_id = $2
 WHERE f.folder_id = $1
@@ -225,6 +310,12 @@ func (q *Queries) ListFilesByFolderForUser(ctx context.Context, arg ListFilesByF
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -328,7 +419,7 @@ func (q *Queries) ListFolderTreeFolders(ctx context.Context, id pgtype.UUID) ([]
 }
 
 const listRootFiles = `-- name: ListRootFiles :many
-SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files
 WHERE folder_id IS NULL AND status = 'active'
 ORDER BY name ASC
 `
@@ -352,6 +443,12 @@ func (q *Queries) ListRootFiles(ctx context.Context) ([]File, error) {
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -364,7 +461,7 @@ func (q *Queries) ListRootFiles(ctx context.Context) ([]File, error) {
 }
 
 const listRootFilesForUser = `-- name: ListRootFilesForUser :many
-SELECT DISTINCT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at FROM files f
+SELECT DISTINCT f.id, f.folder_id, f.name, f.s3_key, f.size_bytes, f.mime_type, f.uploaded_by, f.status, f.created_at, f.thumb_s3_key, f.thumb_width, f.thumb_height, f.thumb_status, f.thumb_generated_at, f.thumb_error FROM files f
 LEFT JOIN permissions p
   ON p.resource_type = 'file' AND p.resource_id = f.id AND p.user_id = $1
 WHERE f.folder_id IS NULL
@@ -392,6 +489,12 @@ func (q *Queries) ListRootFilesForUser(ctx context.Context, userID pgtype.UUID) 
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -403,10 +506,25 @@ func (q *Queries) ListRootFilesForUser(ctx context.Context, userID pgtype.UUID) 
 	return items, nil
 }
 
+const moveFilesToFolder = `-- name: MoveFilesToFolder :exec
+UPDATE files SET folder_id = $1
+WHERE id = ANY($2::uuid[]) AND status = 'active'
+`
+
+type MoveFilesToFolderParams struct {
+	FolderID pgtype.UUID   `json:"folder_id"`
+	FileIds  []pgtype.UUID `json:"file_ids"`
+}
+
+func (q *Queries) MoveFilesToFolder(ctx context.Context, arg MoveFilesToFolderParams) error {
+	_, err := q.db.Exec(ctx, moveFilesToFolder, arg.FolderID, arg.FileIds)
+	return err
+}
+
 const restoreFile = `-- name: RestoreFile :one
 UPDATE files SET status = 'active'
 WHERE id = $1 AND status = 'deleted'
-RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 func (q *Queries) RestoreFile(ctx context.Context, id pgtype.UUID) (File, error) {
@@ -422,12 +540,18 @@ func (q *Queries) RestoreFile(ctx context.Context, id pgtype.UUID) (File, error)
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }
 
 const searchFiles = `-- name: SearchFiles :many
-SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at FROM files
+SELECT id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error FROM files
 WHERE status = 'active' AND name ILIKE '%' || $1 || '%'
 ORDER BY name ASC
 LIMIT 100
@@ -452,6 +576,12 @@ func (q *Queries) SearchFiles(ctx context.Context, dollar_1 *string) ([]File, er
 			&i.UploadedBy,
 			&i.Status,
 			&i.CreatedAt,
+			&i.ThumbS3Key,
+			&i.ThumbWidth,
+			&i.ThumbHeight,
+			&i.ThumbStatus,
+			&i.ThumbGeneratedAt,
+			&i.ThumbError,
 		); err != nil {
 			return nil, err
 		}
@@ -472,8 +602,18 @@ func (q *Queries) SoftDeleteFile(ctx context.Context, id pgtype.UUID) error {
 	return err
 }
 
+const softDeleteFilesMany = `-- name: SoftDeleteFilesMany :exec
+UPDATE files SET status = 'deleted'
+WHERE id = ANY($1::uuid[]) AND status = 'active'
+`
+
+func (q *Queries) SoftDeleteFilesMany(ctx context.Context, ids []pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, softDeleteFilesMany, ids)
+	return err
+}
+
 const updateFileName = `-- name: UpdateFileName :one
-UPDATE files SET name = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+UPDATE files SET name = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 type UpdateFileNameParams struct {
@@ -494,6 +634,12 @@ func (q *Queries) UpdateFileName(ctx context.Context, arg UpdateFileNameParams) 
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }

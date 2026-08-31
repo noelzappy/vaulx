@@ -411,8 +411,9 @@ func (h *FilesHandler) DeleteFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if permanent {
-		if err := storage.DeleteObject(r.Context(), file.S3Key); err != nil {
-			_ = err // S3 object may already be gone; still remove the record
+		_ = storage.DeleteObject(r.Context(), file.S3Key) // original may already be gone
+		if file.ThumbS3Key != nil && *file.ThumbS3Key != "" {
+			_ = storage.DeleteObject(r.Context(), *file.ThumbS3Key)
 		}
 		if err := h.queries.HardDeleteFile(r.Context(), fileUUID); err != nil {
 			http.Error(w, "failed to delete file", http.StatusInternalServerError)
@@ -701,8 +702,10 @@ func (h *FilesHandler) buildViews(ctx context.Context, dbFolders []db.Folder, db
 		}
 		fv := viewmodel.FileFromDB(f, uploaderName)
 		if f.MimeType != nil && strings.HasPrefix(*f.MimeType, "image/") {
-			if url, err := storage.PresignGET(ctx, f.S3Key); err == nil {
-				fv.ThumbURL = url
+			if f.ThumbS3Key != nil && *f.ThumbS3Key != "" {
+				if url, err := storage.PresignGET(ctx, *f.ThumbS3Key); err == nil {
+					fv.ThumbURL = url
+				}
 			}
 		}
 		files = append(files, fv)

@@ -247,7 +247,7 @@ func (q *Queries) ListRootFoldersForUser(ctx context.Context, userID pgtype.UUID
 }
 
 const moveFileToFolder = `-- name: MoveFileToFolder :one
-UPDATE files SET folder_id = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at
+UPDATE files SET folder_id = $1 WHERE id = $2 AND status = 'active' RETURNING id, folder_id, name, s3_key, size_bytes, mime_type, uploaded_by, status, created_at, thumb_s3_key, thumb_width, thumb_height, thumb_status, thumb_generated_at, thumb_error
 `
 
 type MoveFileToFolderParams struct {
@@ -268,6 +268,12 @@ func (q *Queries) MoveFileToFolder(ctx context.Context, arg MoveFileToFolderPara
 		&i.UploadedBy,
 		&i.Status,
 		&i.CreatedAt,
+		&i.ThumbS3Key,
+		&i.ThumbWidth,
+		&i.ThumbHeight,
+		&i.ThumbStatus,
+		&i.ThumbGeneratedAt,
+		&i.ThumbError,
 	)
 	return i, err
 }

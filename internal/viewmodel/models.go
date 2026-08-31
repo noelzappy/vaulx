@@ -28,7 +28,8 @@ type FileView struct {
 	Status       string
 	CreatedAt    time.Time
 	RelativeDate string
-	ThumbURL     string // presigned GET URL for image files; empty otherwise
+	ThumbS3Key   string // S3 key of the generated thumbnail; empty if none
+	ThumbURL     string // presigned GET URL for the thumbnail; empty otherwise
 }
 
 type FolderView struct {
@@ -146,6 +147,10 @@ func FileFromDB(f db.File, uploaderName string) FileView {
 		folderID = f.FolderID.String()
 	}
 	createdAt := f.CreatedAt.Time
+	var thumbS3Key string
+	if f.ThumbS3Key != nil {
+		thumbS3Key = *f.ThumbS3Key
+	}
 	return FileView{
 		ID:           f.ID.String(),
 		Name:         f.Name,
@@ -158,6 +163,7 @@ func FileFromDB(f db.File, uploaderName string) FileView {
 		Status:       f.Status,
 		CreatedAt:    createdAt,
 		RelativeDate: RelativeTime(createdAt),
+		ThumbS3Key:   thumbS3Key,
 	}
 }
 

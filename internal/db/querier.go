@@ -14,6 +14,7 @@ type Querier interface {
 	ActivateFile(ctx context.Context, id pgtype.UUID) (File, error)
 	CheckPermission(ctx context.Context, arg CheckPermissionParams) (bool, error)
 	ClaimNextPendingZipJob(ctx context.Context) (ZipJob, error)
+	ClaimPendingThumbnail(ctx context.Context) (File, error)
 	CountAuditLog(ctx context.Context) (int64, error)
 	CountFiles(ctx context.Context, folderID pgtype.UUID) (int64, error)
 	CountFolderItems(ctx context.Context, parentID pgtype.UUID) (int64, error)
@@ -31,6 +32,7 @@ type Querier interface {
 	GetActiveShareByFileID(ctx context.Context, fileID pgtype.UUID) (Share, error)
 	GetActiveShareByFolderID(ctx context.Context, folderID pgtype.UUID) (Share, error)
 	GetFile(ctx context.Context, id pgtype.UUID) (File, error)
+	GetFilesByIDs(ctx context.Context, ids []pgtype.UUID) ([]File, error)
 	GetFolder(ctx context.Context, id pgtype.UUID) (Folder, error)
 	GetReusableZipJob(ctx context.Context, arg GetReusableZipJobParams) (ZipJob, error)
 	GetShare(ctx context.Context, id pgtype.UUID) (Share, error)
@@ -40,6 +42,7 @@ type Querier interface {
 	GetZipJob(ctx context.Context, id pgtype.UUID) (ZipJob, error)
 	GrantPermission(ctx context.Context, arg GrantPermissionParams) (Permission, error)
 	HardDeleteFile(ctx context.Context, id pgtype.UUID) error
+	HardDeleteFilesMany(ctx context.Context, ids []pgtype.UUID) error
 	IncrementShareViewCount(ctx context.Context, id pgtype.UUID) error
 	ListAllFolders(ctx context.Context) ([]Folder, error)
 	ListAllShares(ctx context.Context) ([]ListAllSharesRow, error)
@@ -49,6 +52,7 @@ type Querier interface {
 	ListExpiredReadyZipJobs(ctx context.Context) ([]ZipJob, error)
 	ListFilesByFolder(ctx context.Context, folderID pgtype.UUID) ([]File, error)
 	ListFilesByFolderForUser(ctx context.Context, arg ListFilesByFolderForUserParams) ([]File, error)
+	ListFilesMissingThumbnails(ctx context.Context, limit int32) ([]File, error)
 	ListFilesPage(ctx context.Context, arg ListFilesPageParams) ([]File, error)
 	ListFolderTreeFiles(ctx context.Context, id pgtype.UUID) ([]ListFolderTreeFilesRow, error)
 	ListFolderTreeFolders(ctx context.Context, id pgtype.UUID) ([]ListFolderTreeFoldersRow, error)
@@ -62,16 +66,21 @@ type Querier interface {
 	ListRootFoldersForUser(ctx context.Context, userID pgtype.UUID) ([]Folder, error)
 	ListSharesByCreator(ctx context.Context, createdBy pgtype.UUID) ([]ListSharesByCreatorRow, error)
 	ListUsers(ctx context.Context) ([]User, error)
+	MarkThumbnailFailed(ctx context.Context, arg MarkThumbnailFailedParams) error
+	MarkThumbnailReady(ctx context.Context, arg MarkThumbnailReadyParams) error
 	MarkZipJobExpired(ctx context.Context, id pgtype.UUID) error
 	MarkZipJobFailed(ctx context.Context, arg MarkZipJobFailedParams) error
 	MarkZipJobReady(ctx context.Context, arg MarkZipJobReadyParams) error
 	MoveFileToFolder(ctx context.Context, arg MoveFileToFolderParams) (File, error)
+	MoveFilesToFolder(ctx context.Context, arg MoveFilesToFolderParams) error
+	ResetPendingThumbnails(ctx context.Context) error
 	RestoreFile(ctx context.Context, id pgtype.UUID) (File, error)
 	RevokePermission(ctx context.Context, id pgtype.UUID) error
 	RevokeShare(ctx context.Context, id pgtype.UUID) error
 	SearchFiles(ctx context.Context, dollar_1 *string) ([]File, error)
 	SearchFolders(ctx context.Context, dollar_1 *string) ([]Folder, error)
 	SoftDeleteFile(ctx context.Context, id pgtype.UUID) error
+	SoftDeleteFilesMany(ctx context.Context, ids []pgtype.UUID) error
 	UpdateFileName(ctx context.Context, arg UpdateFileNameParams) (File, error)
 	UpdateFileSizeAndStatus(ctx context.Context, arg UpdateFileSizeAndStatusParams) (File, error)
 	UpdateFolderName(ctx context.Context, arg UpdateFolderNameParams) (Folder, error)

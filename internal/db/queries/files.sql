@@ -91,3 +91,17 @@ FROM files fi
 JOIN tree t ON fi.folder_id = t.id
 WHERE fi.status = 'active'
 ORDER BY t.relpath, fi.name;
+
+-- name: GetFilesByIDs :many
+SELECT * FROM files WHERE id = ANY(sqlc.arg(ids)::uuid[]);
+
+-- name: MoveFilesToFolder :exec
+UPDATE files SET folder_id = sqlc.arg(folder_id)
+WHERE id = ANY(sqlc.arg(file_ids)::uuid[]) AND status = 'active';
+
+-- name: SoftDeleteFilesMany :exec
+UPDATE files SET status = 'deleted'
+WHERE id = ANY(sqlc.arg(ids)::uuid[]) AND status = 'active';
+
+-- name: HardDeleteFilesMany :exec
+DELETE FROM files WHERE id = ANY(sqlc.arg(ids)::uuid[]);

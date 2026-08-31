@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/noelzappy/vaulx/internal/db"
 	"github.com/noelzappy/vaulx/internal/viewmodel"
 )
 
@@ -36,5 +38,29 @@ func TestRelativeTime(t *testing.T) {
 	}
 	if got := viewmodel.RelativeTime(now.Add(-1 * time.Minute)); got != "1 minute ago" {
 		t.Errorf("expected '1 minute ago', got %q", got)
+	}
+}
+
+func TestFileFromDB_ThumbS3Key(t *testing.T) {
+	thumb := "thumbs/abc.jpg"
+	now := time.Now()
+	f := db.File{
+		ID:          pgtype.UUID{Bytes: [16]byte{1}, Valid: true},
+		UploadedBy:  pgtype.UUID{Bytes: [16]byte{2}, Valid: true},
+		Name:        "photo.png",
+		SizeBytes:   100,
+		Status:      "active",
+		CreatedAt:   pgtype.Timestamptz{Time: now, Valid: true},
+		ThumbS3Key:  &thumb,
+		ThumbStatus: "ready",
+	}
+
+	v := viewmodel.FileFromDB(f, "uploader")
+	if v.ThumbS3Key != thumb {
+		t.Fatalf("ThumbS3Key = %q, want %q", v.ThumbS3Key, thumb)
+	}
+	// The mapper never presigns; it only carries the key. buildViews does the presign.
+	if v.ThumbURL != "" {
+		t.Fatalf("ThumbURL should be empty from the mapper, got %q", v.ThumbURL)
 	}
 }

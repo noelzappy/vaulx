@@ -38,9 +38,53 @@ templ FileBrowserContent(data viewmodel.FileBrowserData, user viewmodel.UserView
 						</svg>
 						New Folder
 					</button>
+					<button
+						class="btn btn-ghost"
+						@click="$store.selection.toggleActive()"
+					>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:14px;height:14px">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"></path>
+						</svg>
+						<span x-text="$store.selection.active ? 'Cancel' : 'Select'"></span>
+					</button>
 				}
 			</div>
 		</div>
+		if user.Role == "admin" || user.Role == "editor" {
+			<div
+				class="selection-bar"
+				x-show="$store.selection.active"
+				x-cloak
+				x-data="{ folders: [], dropOpen: false, loadingFolders: false }"
+			>
+				<span class="selection-count" x-text="$store.selection.count + ' selected'"></span>
+				<div class="selection-actions">
+					<div class="dropdown">
+						<button
+							class="btn btn-ghost"
+							@click="
+								if (folders.length === 0) {
+									loadingFolders = true;
+									fetch('/api/folders').then(function(r){ return r.json() }).then(function(d){ folders = d }).finally(function(){ loadingFolders = false });
+								}
+								dropOpen = !dropOpen;
+							"
+						>Move to ▾</button>
+						<div class="dropdown-menu" x-show="dropOpen" x-cloak @click.outside="dropOpen = false">
+							<button class="dropdown-item" @click="vaulxBulkMove($store.selection.ids, '')">⬆ Root (no folder)</button>
+							<template x-for="f in folders" :key="f.id">
+								<button class="dropdown-item" x-text="'📁 ' + f.name" @click="vaulxBulkMove($store.selection.ids, f.id)"></button>
+							</template>
+						</div>
+					</div>
+					<button class="btn btn-danger" @click="vaulxBulkDelete($store.selection.ids, false)">Delete</button>
+					if user.Role == "admin" {
+						<button class="btn btn-danger" @click="vaulxBulkDelete($store.selection.ids, true)">Delete permanently</button>
+					}
+					<button class="btn btn-ghost" @click="$store.selection.setActive(false)">Cancel</button>
+				</div>
+			</div>
+		}
 		if data.FolderID != "" {
 			<div id="zip-status-slot" style="margin-bottom:12px;"></div>
 		}

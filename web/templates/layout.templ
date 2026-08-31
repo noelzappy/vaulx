@@ -11,6 +11,18 @@ templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 			<title>{ title } — Vaulx</title>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+			<script>
+				document.addEventListener('alpine:init', function() {
+					Alpine.store('selection', {
+						active: false,
+						ids: [],
+						get count() { return this.ids.length },
+						toggle(id) { this.ids = this.ids.includes(id) ? this.ids.filter(function(x){ return x !== id }) : this.ids.concat(id) },
+						toggleActive() { this.active = !this.active; this.ids = [] },
+						setActive(v) { this.active = v; this.ids = [] }
+					});
+				});
+			</script>
 			<script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
 			if showUpload {
 				<link href="https://releases.transloadit.com/uppy/v3.27.0/uppy.min.css" rel="stylesheet"/>
@@ -99,6 +111,45 @@ templ Layout(title string, user viewmodel.UserView, showUpload bool) {
 				}
 				function copyFolderShareLink(folderID) {
 					return vaulxCopyShare('/files/folders/' + folderID + '/share')
+				}
+			</script>
+			<script>
+				// Clear any active bulk selection whenever the browser content is
+				// swapped (navigation, upload refresh, bulk action, etc).
+				document.body.addEventListener('htmx:beforeSwap', function(e) {
+					if (e.detail.target && e.detail.target.id === 'browser-content' && window.Alpine) {
+						try { Alpine.store('selection').setActive(false) } catch (err) {}
+					}
+				});
+				async function vaulxBulkMove(ids, folderId) {
+					try {
+						const res = await fetch('/files/bulk/move', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ file_ids: ids, folder_id: folderId })
+						});
+						if (!res.ok) throw new Error('move failed');
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Files moved', type: 'success' } }));
+						Alpine.store('selection').setActive(false);
+						htmx.ajax('GET', window.location.pathname, { target: '#browser-content', swap: 'outerHTML' });
+					} catch (e) {
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Failed to move files', type: 'error' } }));
+					}
+				}
+				async function vaulxBulkDelete(ids, permanent) {
+					try {
+						const res = await fetch('/files/bulk/delete', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
+							body: JSON.stringify({ file_ids: ids, permanent: permanent })
+						});
+						if (!res.ok) throw new Error('delete failed');
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Files deleted', type: 'success' } }));
+						Alpine.store('selection').setActive(false);
+						htmx.ajax('GET', window.location.pathname, { target: '#browser-content', swap: 'outerHTML' });
+					} catch (e) {
+						window.dispatchEvent(new CustomEvent('showtoast', { detail: { message: 'Failed to delete files', type: 'error' } }));
+					}
 				}
 			</script>
 		</body>

@@ -19,15 +19,21 @@ type AuditLog struct {
 }
 
 type File struct {
-	ID         pgtype.UUID        `json:"id"`
-	FolderID   pgtype.UUID        `json:"folder_id"`
-	Name       string             `json:"name"`
-	S3Key      string             `json:"s3_key"`
-	SizeBytes  int64              `json:"size_bytes"`
-	MimeType   *string            `json:"mime_type"`
-	UploadedBy pgtype.UUID        `json:"uploaded_by"`
-	Status     string             `json:"status"`
-	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	ID               pgtype.UUID        `json:"id"`
+	FolderID         pgtype.UUID        `json:"folder_id"`
+	Name             string             `json:"name"`
+	S3Key            string             `json:"s3_key"`
+	SizeBytes        int64              `json:"size_bytes"`
+	MimeType         *string            `json:"mime_type"`
+	UploadedBy       pgtype.UUID        `json:"uploaded_by"`
+	Status           string             `json:"status"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	ThumbS3Key       *string            `json:"thumb_s3_key"`
+	ThumbWidth       *int32             `json:"thumb_width"`
+	ThumbHeight      *int32             `json:"thumb_height"`
+	ThumbStatus      string             `json:"thumb_status"`
+	ThumbGeneratedAt pgtype.Timestamptz `json:"thumb_generated_at"`
+	ThumbError       *string            `json:"thumb_error"`
 }
 
 type Folder struct {
