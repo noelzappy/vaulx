@@ -85,3 +85,33 @@ func TestSharedFileDirectDownload_NilQueries(t *testing.T) {
 		t.Errorf("expected 404, got %d", rr.Code)
 	}
 }
+
+func TestSharedFilePreview_EmptySlug(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/s//file/x/preview", nil)
+	ctx := withChiParam(req.Context(), "slug", "")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.SharedFilePreview(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}
+
+func TestSharedFilePreview_NilQueries(t *testing.T) {
+	h := handler.NewShareHandler(nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/s/some-slug/file/x/preview", nil)
+	ctx := withChiParam(req.Context(), "slug", "some-slug")
+	req = req.WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	h.SharedFilePreview(rr, req)
+
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", rr.Code)
+	}
+}

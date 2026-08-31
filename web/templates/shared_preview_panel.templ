@@ -1,0 +1,37 @@
+package templates
+
+import (
+	"github.com/noelzappy/vaulx/internal/db"
+	"github.com/noelzappy/vaulx/internal/viewmodel"
+)
+
+templ SharedPreviewPanel(file db.File, presignedURL string, slug string) {
+	<div class="preview-header">
+		<span class="preview-filename" title={ file.Name }>{ file.Name }</span>
+		<button class="preview-close" x-on:click.stop="previewOpen = false" aria-label="Close preview">
+			<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:18px;height:18px;">
+				<path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12"></path>
+			</svg>
+		</button>
+	</div>
+	<div class="preview-media">
+		@previewArea(mimeType(file), presignedURL, file.Name)
+	</div>
+	<div class="preview-meta">
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Size</span>
+			<span>{ viewmodel.HumanSize(file.SizeBytes) }</span>
+		</div>
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Date</span>
+			<span>{ viewmodel.RelativeTime(file.CreatedAt.Time) }</span>
+		</div>
+		<div class="preview-meta-row">
+			<span class="preview-meta-label">Type</span>
+			<span>{ mimeType(file) }</span>
+		</div>
+	</div>
+	<div class="preview-actions">
+		<a class="btn btn-primary" href={ templ.SafeURL("/s/" + slug + "/file/" + file.ID.String()) }>Download</a>
+	</div>
+}

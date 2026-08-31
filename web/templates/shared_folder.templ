@@ -11,9 +11,10 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 			<title>{ folderName } — Vaulx</title>
 			<link rel="stylesheet" href="/static/app.css"/>
 			<script src="https://unpkg.com/htmx.org@2.0.3" integrity="sha384-0895/pl2MU10Hqc6jd4RvrthNlDiE9U1tWmX7WRESftEDRosgxNsQG/Ze9YMRzHq" crossorigin="anonymous"></script>
+			<script src="https://unpkg.com/alpinejs@3.14.3/dist/cdn.min.js" defer></script>
 		</head>
 		<body>
-			<div class="shared-page">
+			<div class="shared-page" x-data="{ previewOpen: false }">
 				<header class="shared-header">
 					<div class="sidebar-logo" style="padding:0;">Vaul<span>x</span></div>
 					<div>
@@ -59,7 +60,13 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 						<p class="section-heading">Files</p>
 						<div class="file-grid">
 							for _, f := range files {
-								<a class="card" style="display:block;" href={ templ.SafeURL("/s/" + slug + "/file/" + f.ID) } title={ "Download " + f.Name }>
+								<div
+									class="card"
+									title={ f.Name }
+									hx-get={ string(templ.SafeURL("/s/" + slug + "/file/" + f.ID + "/preview")) }
+									hx-target="#preview-panel"
+									hx-swap="innerHTML"
+								>
 									if f.ThumbURL != "" {
 										<img class="card-thumb" src={ f.ThumbURL } alt={ f.Name } loading="lazy" draggable="false"/>
 									} else {
@@ -71,14 +78,31 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 									<div class="card-meta">
 										<span>{ f.SizeHuman }</span>
 										<span class="card-meta-sep">·</span>
-										<span>Download</span>
+										<a class="card-btn" href={ templ.SafeURL("/s/" + slug + "/file/" + f.ID) } onclick="event.stopPropagation()">Download</a>
 									</div>
-								</a>
+								</div>
 							}
 						</div>
 					}
 				</main>
+				<div
+					id="preview-panel"
+					class="preview-panel"
+					x-show="previewOpen"
+					x-cloak
+					@click.outside="previewOpen = false"
+					@keydown.escape.window="previewOpen = false"
+				></div>
 			</div>
+			<script>
+				document.body.addEventListener("htmx:afterSwap", function(e) {
+					if (e.detail.target && e.detail.target.id === "preview-panel") {
+						var app = document.querySelector(".shared-page");
+						if (app && app.__x) app.__x.$data.previewOpen = true;
+						else if (app && app._x_dataStack) Alpine.$data(app).previewOpen = true;
+					}
+				});
+			</script>
 		</body>
 	</html>
 }

@@ -318,6 +318,54 @@ func (h *ShareHandler) SharedFileDownload(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, downloadURL, http.StatusFound)
 }
 
+// GET /s/{slug}/file/{fileID}/preview — public preview partial for a shared
+// folder file. Only files inside the shared folder tree are served.
+func (h *ShareHandler) SharedFilePreview(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	if slug == "" || h.queries == nil {
+		http.NotFound(w, r)
+		return
+	}
+
+	share, err := h.queries.GetShareBySlug(r.Context(), slug)
+	if err != nil || !share.FolderID.Valid {
+		http.NotFound(w, r)
+		return
+	}
+	if share.ExpiresAt.Valid && time.Now().UTC().After(share.ExpiresAt.Time) {
+		http.Error(w, "link expired", http.StatusGone)
+		return
+	}
+	if share.MaxViews != nil && share.ViewCount >= *share.MaxViews {
+		http.Error(w, "link expired", http.StatusGone)
+		return
+	}
+
+	fileUUID, err := viewmodel.UUIDFromString(chi.URLParam(r, "fileID"))
+	if err != nil {
+		http.Error(w, "invalid file id", http.StatusBadRequest)
+		return
+	}
+	file, err := h.queries.GetFile(r.Context(), fileUUID)
+	if err != nil || file.Status != "active" {
+		http.NotFound(w, r)
+		return
+	}
+	if !file.FolderID.Valid || !h.folderInTree(r.Context(), file.FolderID, share.FolderID) {
+		http.NotFound(w, r)
+		return
+	}
+
+	previewURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	if err != nil {
+		http.Error(w, "failed to generate preview URL", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = templates.SharedPreviewPanel(file, previewURL, slug).Render(r.Context(), w)
+}
+
 // POST /files/folders/{folderID}/share — editor+ only, creates a 7-day public folder share.
 func (h *ShareHandler) CreateFolderShare(w http.ResponseWriter, r *http.Request) {
 	user, ok := auth.GetCurrentUser(r.Context())

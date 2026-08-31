@@ -93,6 +93,7 @@ func main() {
 	r.Get("/s/{slug}", shareHandler.ResolveShare)
 	r.Get("/s/{slug}/download", shareHandler.SharedFileDirectDownload)
 	r.Get("/s/{slug}/file/{fileID}", shareHandler.SharedFileDownload)
+	r.Get("/s/{slug}/file/{fileID}/preview", shareHandler.SharedFilePreview)
 	r.Get("/s/{slug}/zip", zipHandler.SharedStreamZip)
 	r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/s/{slug}/zip/prepare", zipHandler.SharedPrepareZip)
 	r.Get("/s/{slug}/zip/status", zipHandler.SharedZipStatus)
