@@ -60,9 +60,13 @@ templ SharedFolderPage(slug, folderID, folderName string, isRoot bool, folders [
 						<div class="file-grid">
 							for _, f := range files {
 								<a class="card" style="display:block;" href={ templ.SafeURL("/s/" + slug + "/file/" + f.ID) } title={ "Download " + f.Name }>
-									<div class="card-icon">
-										@fileTypeIcon(f.MimeType)
-									</div>
+									if f.ThumbURL != "" {
+										<img class="card-thumb" src={ f.ThumbURL } alt={ f.Name } loading="lazy" draggable="false"/>
+									} else {
+										<div class="card-icon">
+											@fileTypeIcon(f.MimeType)
+										</div>
+									}
 									<div class="card-name">{ f.Name }</div>
 									<div class="card-meta">
 										<span>{ f.SizeHuman }</span>

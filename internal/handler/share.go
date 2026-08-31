@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/noelzappy/vaulx/internal/auth"
@@ -260,7 +261,13 @@ func (h *ShareHandler) resolveFolderShare(w http.ResponseWriter, r *http.Request
 	}
 	files := make([]viewmodel.FileView, 0, len(dbFiles))
 	for _, f := range dbFiles {
-		files = append(files, viewmodel.FileFromDB(f, ""))
+		fv := viewmodel.FileFromDB(f, "")
+		if f.MimeType != nil && strings.HasPrefix(*f.MimeType, "image/") && f.ThumbS3Key != nil && *f.ThumbS3Key != "" {
+			if url, err := storage.PresignGET(ctx, *f.ThumbS3Key); err == nil {
+				fv.ThumbURL = url
+			}
+		}
+		files = append(files, fv)
 	}
 
 	isRoot := target.Bytes == share.FolderID.Bytes
