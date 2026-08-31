@@ -1,0 +1,13 @@
+# Dev image for hot reload: mounts the source and runs air, which regenerates
+# templ/sqlc and rebuilds+restarts on change. Not used in production.
+FROM golang:1.26-alpine
+
+RUN apk add --no-cache git ca-certificates
+
+WORKDIR /app
+
+RUN go install github.com/a-h/templ/cmd/templ@v0.3.1020 \
+    && go install github.com/sqlc-dev/sqlc/cmd/sqlc@v1.31.1 \
+    && go install github.com/air-verse/air@latest
+
+CMD ["air", "-c", ".air.toml"]

@@ -1,0 +1,19 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server ./cmd/server"
+  bin = "./tmp/server"
+  full_bin = ""
+  include_ext = ["go", "templ", "sql"]
+  exclude_dir = ["web/static", "tmp", "internal/db"]
+  exclude_regex = []
+  exclude_unchanged = false
+  follow_symlink = false
+  delay = 500
+  stop_on_error = true
+  send_interrupt = false
+  kill_delay = 500
+  pre_cmd = ["templ generate", "sqlc generate"]
+  post_cmd = []
+  args_bin = []

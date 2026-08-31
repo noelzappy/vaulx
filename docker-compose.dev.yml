@@ -1,0 +1,10 @@
+# Dev override: hot-reload the app from a mounted source tree using air.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    command: air -c .air.toml
+    volumes:
+      - .:/app

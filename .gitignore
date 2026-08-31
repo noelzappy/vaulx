@@ -2,5 +2,4 @@ bin/
 /server
 *.env
 .env
-.air.toml
 tmp/

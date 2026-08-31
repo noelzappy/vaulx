@@ -37,7 +37,7 @@ templ FileCard(file viewmodel.FileView, canEdit bool, canHardDelete bool) {
 			class="card-select-overlay"
 			x-show="$store.selection.active"
 			x-cloak
-			@click.stop="$store.selection.toggle($el.closest('.card').dataset.fileId)"
+			@click.stop="null"
 			@touchstart.stop
 		>
 			<div class="select-check" :class="{ 'selected': $store.selection.ids.includes($el.closest('.card').dataset.fileId) }">

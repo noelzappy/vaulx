@@ -65,6 +65,7 @@ button{cursor:pointer;font:inherit}
 .dropdown-item:hover{background:rgba(255,255,255,.07);color:var(--text)}
 .btn-danger{background:transparent;border:1px solid var(--danger);color:var(--danger)}
 .btn-danger:hover{background:rgba(248,81,73,.12);color:var(--danger)}
+.marquee-rect{position:fixed;z-index:20000;pointer-events:none;border:1px solid var(--accent);background:rgba(240,165,0,.14)}
 .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:background .15s,border-color .15s;position:relative;user-select:none}
 .card:hover{background:var(--bg-card-hover);border-color:rgba(255,255,255,.12)}
 .card-icon{width:36px;height:36px;border-radius:var(--radius-sm);background:rgba(240,165,0,.12);display:flex;align-items:center;justify-content:center;margin-bottom:10px}

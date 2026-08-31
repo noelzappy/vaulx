@@ -54,7 +54,7 @@ func Layout(title string, user viewmodel.UserView, showUpload bool) templ.Compon
 				return templ_7745c5c3_Err
 			}
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</head><body><div class=\"app\" x-data=\"{ toasts: [], previewOpen: false }\" x-on:showtoast.window=\"toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)\">")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "<script src=\"/static/selection.js\"></script></head><body><div class=\"app\" x-data=\"{ toasts: [], previewOpen: false }\" x-on:showtoast.window=\"toasts.push($event.detail); setTimeout(() => toasts.shift(), 3000)\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
