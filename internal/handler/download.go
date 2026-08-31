@@ -62,7 +62,7 @@ func (h *DownloadHandler) Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	downloadURL, err := storage.PresignGET(r.Context(), file.S3Key)
+	downloadURL, err := storage.PresignGETDownload(r.Context(), file.S3Key, file.Name)
 	if err != nil {
 		http.Error(w, "failed to generate download URL", http.StatusInternalServerError)
 		return
